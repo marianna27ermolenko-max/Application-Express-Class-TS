@@ -1,11 +1,11 @@
 import { Response, Request } from "express";
-import { HttpStatus } from "../../../core/types/http.status";
-import { blogsService } from "../../application/blogs.service";
+import { HttpStatus } from "../../../common/types/http.status";
+import { blogsService } from "../../domain/blogs.service";
 import { PostCreateBlogIdDto } from "../input/post-blogId-body";
 import { Post } from "../../../posts/types/post.type";
-import { APIErrorResult } from "../../../core/utils/APIErrorResult";
+import { APIErrorResult } from "../../../common/utils/APIErrorResult";
 import { mapToPostViewMolel } from "../../../posts/routers/mappers/map-to-post-model";
-import { postsService } from "../../../posts/application/posts.service";
+import { postsService } from "../../../posts/domain/posts.service";
 
 export async function createBlogIdPost(req: Request<{blogId: string}, {}, PostCreateBlogIdDto>, res: Response){
 

@@ -1,4 +1,4 @@
-import { SortDirections } from "../../../core/types/sort-direction"
+import { SortDirections } from "../../../common/types/sort-direction"
 import { PostSortField } from "../../../posts/routers/input/post-sort-field"; 
 
 //тип - то что нам приходит из req.query

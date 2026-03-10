@@ -3,7 +3,7 @@ dotenv.config()
 
 import express from "express";
 import { setupApp } from "./setup-app";
-import { SETTINGS } from "./core/settings/setting";
+import { SETTINGS } from "./common/settings/setting";
 import { runDB } from "./db/mongo.db";
 
 const bootstrap = async () => {

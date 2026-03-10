@@ -2,7 +2,7 @@ import { Blog } from "../types/blog.type";
 import { BlogInputModel } from "../dto/blog.dto.model";
 import { blogCollection } from "../../db/mongo.db";
 import { WithId, ObjectId } from "mongodb";
-import { PaginationAndSorting } from "../../core/types/pagination_and_sorting";
+import { PaginationAndSorting } from "../../common/types/pagination_and_sorting";
 import { BlogSortField } from "../routers/input/blogs-sort-field";
 
 export const blogsRepository = {
@@ -25,8 +25,6 @@ async findMany(queryDTO: PaginationAndSorting<BlogSortField> & {searchNameTerm?:
   if(searchNameTerm){
     filter.name = {$regex: searchNameTerm, $options: 'i'};
   }
-
-  console.log(filter);
 
   const items = await blogCollection
      .find(filter)

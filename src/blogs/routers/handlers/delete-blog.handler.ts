@@ -1,7 +1,7 @@
 import { Response, Request } from "express";
-import { HttpStatus } from "../../../core/types/http.status";
-import { APIErrorResult } from "../../../core/utils/APIErrorResult";
-import { blogsService } from "../../application/blogs.service";
+import { HttpStatus } from "../../../common/types/http.status";
+import { APIErrorResult } from "../../../common/utils/APIErrorResult";
+import { blogsService } from "../../domain/blogs.service";
 
 export async function deleteBlogHandler(req: Request<{id: string}>, res: Response){
 try{

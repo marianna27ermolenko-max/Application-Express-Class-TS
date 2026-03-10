@@ -1,6 +1,6 @@
 import { Router, Response, Request } from 'express';
-import { blogCollection, postCollection } from '../db/mongo.db';
-import { HttpStatus } from '../core/types/http.status';
+import { blogCollection, postCollection, userCollection } from '../db/mongo.db';
+import { HttpStatus } from '../common/types/http.status';
 
 export const testingRouter = Router();
 
@@ -9,6 +9,7 @@ testingRouter
       await Promise.all([
    blogCollection.deleteMany(),
    postCollection.deleteMany(),
+   userCollection.deleteMany(),
    ])
    res.sendStatus(HttpStatus.NO_CONTENT);
 });

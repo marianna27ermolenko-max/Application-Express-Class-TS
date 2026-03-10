@@ -1,5 +1,5 @@
 // import { PaginationAndSorting } from "../../../core/types/pagination_and_sorting";
-import { SortDirections } from "../../../core/types/sort-direction";
+import { SortDirections } from "../../../common/types/sort-direction";
 import { PostSortField } from "./post-sort-field";
 
 

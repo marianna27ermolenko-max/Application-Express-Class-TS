@@ -36,10 +36,8 @@ return [
     .isIn(Object.values(SortDirections))
      .withMessage(`Sort direction must be one of: ${Object.values(SortDirections).join(', ')}`),
 
-    query('searchNameTerm')
-    .default(null)
-
-   
+    // query('searchNameTerm')
+    // .default(null)  
 ]
 
 }

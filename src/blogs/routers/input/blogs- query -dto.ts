@@ -1,4 +1,4 @@
-import { PaginationAndSorting } from "../../../core/types/pagination_and_sorting";
+import { PaginationAndSorting } from "../../../common/types/pagination_and_sorting";
 import { BlogSortField } from "./blogs-sort-field";
 
 

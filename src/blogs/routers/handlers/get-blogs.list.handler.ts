@@ -1,9 +1,9 @@
 import { Response, Request } from "express";
-import { blogsService } from "../../application/blogs.service";
-import { HttpStatus } from "../../../core/types/http.status";
+import { blogsService } from "../../domain/blogs.service";
+import { HttpStatus } from "../../../common/types/http.status";
 import { BlogsQueryInput } from "../input/blogs-query.input"; 
 import { matchedData } from "express-validator";
-import { setDefaultSortAndPaginationIfNotExist } from "../../../core/helpers/set-default-sort-and-pagination";
+import { setDefaultSortAndPaginationIfNotExist } from "../../../common/helpers/set-default-sort-and-pagination";
 import { BlogSortField } from "../input/blogs-sort-field";
 import { mapToBlogListPaginatedOutput } from "../mappers/map-to-blog-list-paginated-output.util.ts";
 

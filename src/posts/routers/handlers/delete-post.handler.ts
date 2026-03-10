@@ -1,6 +1,6 @@
 import { Response, Request } from "express";
-import { HttpStatus } from "../../../core/types/http.status";
-import { postsService } from "../../application/posts.service";
+import { HttpStatus } from "../../../common/types/http.status";
+import { postsService } from "../../domain/posts.service";
 
 export async function deletePostHandler(
   req: Request<{ id: string }>,

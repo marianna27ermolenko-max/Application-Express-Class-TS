@@ -1,8 +1,8 @@
 import { Blog } from "../types/blog.type";
 import { BlogInputModel } from "../dto/blog.dto.model";
 import { WithId } from "mongodb";
-import { blogsRepository } from "../repositories/blogs-repositories";
-import { PaginationAndSorting } from "../../core/types/pagination_and_sorting";
+import { blogsRepository } from "../infrastructure/blogs-repositories";
+import { PaginationAndSorting } from "../../common/types/pagination_and_sorting";
 import { BlogSortField } from "../routers/input/blogs-sort-field";
 import { postsRepository } from "../../posts/repositories/post-repositories";
 

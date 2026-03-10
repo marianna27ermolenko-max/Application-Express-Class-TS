@@ -1,4 +1,4 @@
-import { ResourceType } from "../../../core/types/resource-type";
+import { ResourceType } from "../../../common/types/resource-type";
 
 export type PostDataOutput = {
   type: ResourceType.Posts;

@@ -1,7 +1,7 @@
 import { Response, Request } from "express";
-import { HttpStatus } from "../../../core/types/http.status";
+import { HttpStatus } from "../../../common/types/http.status";
 import { mapToPostViewMolel } from "../mappers/map-to-post-model";
-import { postsService } from "../../application/posts.service";
+import { postsService } from "../../domain/posts.service";
 
 export async function getPostHandler(
   req: Request<{ id: string }>,

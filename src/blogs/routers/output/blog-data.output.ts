@@ -1,4 +1,4 @@
-import { ResourceType } from "../../../core/types/resource-type";
+import { ResourceType } from "../../../common/types/resource-type";
 
 //используем в маппере(mapToBlogListPaginatedOutput), который преобраз-т ответ обьекта (блог) + пагинация - этот тип пишем именно для части дата:(в каком виде будем отдавать сам обьект)
 

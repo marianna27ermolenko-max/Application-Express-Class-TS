@@ -1,4 +1,4 @@
-import { PaginatedOutput } from "../../../core/types/paginated.output";
+import { PaginatedOutput } from "../../../common/types/paginated.output";
 import { PostDataOutput } from "./post-data-output";
 
 

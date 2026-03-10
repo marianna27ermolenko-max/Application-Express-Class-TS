@@ -1,9 +1,9 @@
 import { Response, Request } from "express";
-import { HttpStatus } from "../../../core/types/http.status";
+import { HttpStatus } from "../../../common/types/http.status";
 import { mapToPostViewMolel } from "../mappers/map-to-post-model";
-import { APIErrorResult } from "../../../core/utils/APIErrorResult";
-import { blogsService } from "../../../blogs/application/blogs.service";
-import { postsService } from "../../application/posts.service";
+import { APIErrorResult } from "../../../common/utils/APIErrorResult";
+import { blogsService } from "../../../blogs/domain/blogs.service";
+import { postsService } from "../../domain/posts.service";
 
 export async function createPostHandler(req: Request, res: Response) {
   try {

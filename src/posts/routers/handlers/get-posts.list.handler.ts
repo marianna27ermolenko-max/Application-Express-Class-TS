@@ -1,11 +1,11 @@
 import { Response, Request } from "express"; 
-import { HttpStatus } from "../../../core/types/http.status";
-import { postsService } from "../../application/posts.service";
+import { HttpStatus } from "../../../common/types/http.status";
+import { postsService } from "../../domain/posts.service";
 import { PostsQueryInput } from "../input/posts-query.input";
 import { mapToPostListPaginatedOutput } from "../mappers/map-to-post-list-paginated-output.util"; 
 import { matchedData } from "express-validator";
 import { PostSortField } from "../input/post-sort-field";
-import { setDefaultPostPagination } from "../../../core/helpers/set-default-post-sort-and-pagination";
+import { setDefaultPostPagination } from "../../../common/helpers/set-default-post-sort-and-pagination";
 
 export async function getPostListHandler(req: Request<{}, {}, {}, PostsQueryInput>, res: Response){ 
 try{

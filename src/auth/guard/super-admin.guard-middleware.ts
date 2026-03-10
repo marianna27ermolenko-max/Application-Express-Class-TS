@@ -1,5 +1,5 @@
 import { NextFunction, Response, Request } from "express";
-import { HttpStatus } from "../../core/types/http.status";
+import { HttpStatus } from "../../common/types/http.status";
 
 
 export const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';

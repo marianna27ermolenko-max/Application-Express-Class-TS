@@ -2,7 +2,7 @@ import { Post} from "../types/post.type";
 import { PostInputModel } from "../dto/post.dto.view.input";
 import { WithId } from "mongodb";
 import { postsRepository } from "../repositories/post-repositories";
-import { PaginationAndSorting } from "../../core/types/pagination_and_sorting";
+import { PaginationAndSorting } from "../../common/types/pagination_and_sorting";
 import { PostSortField } from "../routers/input/post-sort-field";
 
 

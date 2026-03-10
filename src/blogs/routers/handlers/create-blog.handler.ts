@@ -1,10 +1,10 @@
 import { Response, Request } from "express";
-import { HttpStatus } from "../../../core/types/http.status";
+import { HttpStatus } from "../../../common/types/http.status";
 import { Blog } from "../../types/blog.type";
 import { mapToBlogViewModel } from "../mappers/map-blog-view-model";
-import { APIErrorResult } from "../../../core/utils/APIErrorResult";
+import { APIErrorResult } from "../../../common/utils/APIErrorResult";
 import { BlogInputModel } from "../../dto/blog.dto.model";
-import { blogsService } from "../../application/blogs.service";
+import { blogsService } from "../../domain/blogs.service";
 
 export async function createBlogHandler(req: Request<{}, {}, BlogInputModel>, res: Response){
 
