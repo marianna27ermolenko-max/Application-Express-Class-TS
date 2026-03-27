@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express" 
 import { HttpStatus } from "../../common/types/http.status";
 import { jwtService } from "../adapters/jwt.service";
-import { usersQwRepository } from "../../users/infrastructure/user.query.repository";
+import { usersRepository } from "../../users/infrastructure/user.repository";
 
 export const jwtTokenGuardMiddleware = 
     async (req: Request , 
@@ -9,6 +9,9 @@ export const jwtTokenGuardMiddleware =
     next: NextFunction) => {
 
         const auth = req.headers['authorization'] as string;
+
+        console.log(auth);  //+
+        
 
         if(!auth){
             res.sendStatus(HttpStatus.UNAUTHORIZED);
@@ -22,19 +25,22 @@ export const jwtTokenGuardMiddleware =
         }
 
         const userId = await jwtService.getUserIdByToken(token);
+        
+        console.log(userId);
+        
 
          if(!userId){
             return res.sendStatus(HttpStatus.UNAUTHORIZED);
-    
         }
           
-        const user = await usersQwRepository.findUserById(userId);
-
+        const user = await usersRepository.findById(userId);
         if(!user){
             return res.sendStatus(HttpStatus.UNAUTHORIZED);
-    
         }
-         
-            req.userId = user.id;
+
+        console.log(user);
+        
+
+            req.userId = user._id.toString();
             next();
     }

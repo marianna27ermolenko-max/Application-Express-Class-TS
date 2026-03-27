@@ -7,10 +7,12 @@ import { setupSwagger } from './common/swagger/setup-swagger';
 import { usersRouter } from './users/api/users.router';
 import { authRouter } from './auth/api/auth.router';
 import { commentsRouter } from './comments/api/comments.router';
+import cookieParser from 'cookie-parser';
 
 export const setupApp = (app: Express) => {
 
 app.use(express.json());
+app.use(cookieParser()); 
 
 app.get('/', (req: Request, res: Response) => {
     res.status(200).send('Hello users!');

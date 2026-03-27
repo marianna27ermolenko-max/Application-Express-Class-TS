@@ -1,4 +1,4 @@
-import { ObjectId, WithId } from "mongodb";
+import {  WithId } from "mongodb";
 import { usersRepository } from "../../users/infrastructure/user.repository";
 import { bcryptService } from "../adapters/bcrypt.service";
 import { IUserAuthMe } from "../../users/types/user.auth.me.output";
@@ -11,31 +11,45 @@ import { CreateUserDto } from "../../users/types/create.user.dto";
 import { Result } from "../../common/result/result.type";
 import { ResultStatus } from "../../common/result/resultCode";
 import { UserUpdateEmailResending } from "../../users/types/updateUserByEmailResending";
+import { jwtService } from "../adapters/jwt.service";
+import { refreshTokenRepository } from "../infrastructure/refreshToken.repositiry";
+import { RefreshTokenType } from "../types/refrash.token.dto.for.black.list";
 
 export const authServer = {
   async loginUser(
     loginOrEmail: string,
     password: string,
-  ): Promise<WithId<UserAccountDbType> | null> {
+  ): Promise<Result<string[] | null>>{
+
     const isCorrectCredentials = await this.checkUserCredentials(
       loginOrEmail,
       password,
     );
 
-    console.log(isCorrectCredentials);
+    if (!isCorrectCredentials) return {
+        status: ResultStatus.Unauthorized,
+        errorMessage: "Unauthorized",
+        data: null,                                                          
+        extensions: [{ field: "loginOrEmail", message: "Email or login is wrong" }],  
+    };
+    
+    const accessToken = await jwtService.createAccessToken(isCorrectCredentials);
+    const refreshToken = await jwtService.createRefreshToken(isCorrectCredentials);
 
-    if (!isCorrectCredentials) return null; //Ошибка входа
-    return isCorrectCredentials; //возвращаемое значение при успешной авторизации и сейчас я возвращаю ЮЗЕРА, а до этого возвращала заглушку
+    return {
+      status: ResultStatus.Success,
+      data: [accessToken, refreshToken],
+      extensions: [],
+    };; 
   },
 
-  //проверяем правельные ли логин и пароль, использовали в создании юзера через админку
+  //проверяем логин/почту и пароль юзера (созданног через админку) есть ли он в базе, если нет , то неверные данные , если есть то возвращаем юзера
   async checkUserCredentials(
     loginOrEmail: string,
     password: string,
   ): Promise<WithId<UserAccountDbType> | null> {
     const user = await usersRepository.findByLoginOrEmail(loginOrEmail);
-    console.log(user);
-
+  
     if (!user) return null;
 
     const correctPassword = await bcryptService.checkPassword(
@@ -45,6 +59,7 @@ export const authServer = {
 
     return correctPassword ? user : null;
   },
+
 
   async getUserByUserId(userId: string): Promise<IUserAuthMe | null> {
     const user = await usersQwRepository.findUserByUserId(userId);
@@ -180,5 +195,57 @@ export const authServer = {
       data: true,
       extensions: [],
     };;
+  },
+
+    async updatingAccsesAndRefrefhTokens(
+    userId: string,
+  ): Promise<Result<string[] | null>>{
+
+    const user = await usersRepository.findById(userId)
+    
+    const accessToken = await jwtService.createAccessToken(user!);  //юзер точно есть так как мы проверили это в мидлваре
+    const refreshToken = await jwtService.createRefreshToken(user!);
+
+    return {
+      status: ResultStatus.Success,
+      data: [accessToken, refreshToken],
+      extensions: [],
+    };; 
+  },
+
+    async insertIntoBlackListRefreshToken(
+    refreshToken: string,
+  ): Promise<Result<string | null>>{
+     
+    const refreshTokenBlackList = await refreshTokenRepository.insertIntoBlackList(refreshToken);
+
+    return {                                  //нАДО ЗДЕСЬ ОБЖЕСТ РЕЗАЛТ?
+      status: ResultStatus.Success,
+      data: refreshTokenBlackList,
+      extensions: [],
+    };
+  },
+
+
+   async checkRefreshTokenBlackList(
+    refreshToken: string,
+  ): Promise<Result<boolean>>{
+     
+    const result = await refreshTokenRepository.findRefreshTokenBlackList(refreshToken);
+
+      if (result){
+      return {
+        status: ResultStatus.Forbidden,
+        errorMessage: 'Refresh token is on the blacklist',
+        extensions: [{field: 'refreshToken',  message: 'Refresh token s on the blacklist'}],
+        data: true,
+      };
+    }
+
+    return {
+      status: ResultStatus.Success,
+      extensions: [],
+      data: false,
+    };
   },
 };

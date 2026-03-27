@@ -3,8 +3,7 @@ import { Response } from "express";
 import { LoginDto } from "../../types/login.dto";
 import { authServer } from "../../domain/auth.service";`~~`
 import { HttpStatus } from "../../../common/types/http.status";
-import { APIErrorResult } from "../../../common/utils/APIErrorResult";
-import { jwtService } from "../../adapters/jwt.service";
+import { ResultStatus } from "../../../common/result/resultCode";
 
 
 export async function createAuthUserHandler(
@@ -14,27 +13,19 @@ export async function createAuthUserHandler(
   try {
 
     const { loginOrEmail, password } = req.body;
-    console.log(loginOrEmail, password);
-    
+    const tokens = await authServer.loginUser(loginOrEmail, password);
 
-    const correntUser = await authServer.loginUser(loginOrEmail, password);
-     console.log(correntUser);
+    if(tokens.status === ResultStatus.Unauthorized){ 
+      return res.status(HttpStatus.UNAUTHORIZED).json({errorsMessages: tokens.extensions})};
 
-    if (!correntUser)
-      return res
-        .status(HttpStatus.UNAUTHORIZED)
-        .json(
-          APIErrorResult([
-            {
-              message: "If the password or login is wrong",
-              field: "loginOrEmail",
-            },
-          ]),
-        );
-    
-    const accessToken = await jwtService.createToken(correntUser); //перенести в сервер
+    if(tokens.status === ResultStatus.Success && tokens.data){
+     const [ accessToken, refreshToken ] = tokens.data;
 
-    res.status(HttpStatus.OK).json({accessToken});
+        res.cookie('refreshToken', refreshToken, { httpOnly: true, secure: true })
+         .status(HttpStatus.OK)
+         .json({ accessToken });
+    }
+
   } catch (err: unknown) {
     res.sendStatus(HttpStatus.INTERNAL_SERVER_ERROR);
   }
