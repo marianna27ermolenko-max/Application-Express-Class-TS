@@ -1,9 +1,9 @@
-import {  WithId } from "mongodb";
-import { usersRepository } from "../../users/infrastructure/user.repository";
-import { bcryptService } from "../adapters/bcrypt.service";
+import { WithId } from "mongodb";
+import { UsersRepository } from "../../users/infrastructure/user.repository";
+import { BcryptService } from "../adapters/bcrypt.service";
 import { IUserAuthMe } from "../../users/types/user.auth.me.output";
-import { usersQwRepository } from "../../users/infrastructure/user.query.repository";
-import { nodemailerServise } from "../adapters/nodemailer.server";
+import { UsersQwRepository } from "../../users/infrastructure/user.query.repository";
+import { NodemailerServise } from "../adapters/nodemailer.server";
 import { UserAccountDbType } from "../types/user.account.db.type";
 import { v4 as uuidv4 } from "uuid";
 import { add } from "date-fns";
@@ -11,13 +11,34 @@ import { CreateUserDto } from "../../users/types/create.user.dto";
 import { Result } from "../../common/result/result.type";
 import { ResultStatus } from "../../common/result/resultCode";
 import { UserUpdateEmailResending } from "../../users/types/updateUserByEmailResending";
-import { jwtService } from "../adapters/jwt.service";
+import { JwtService } from "../adapters/jwt.service";
 import { ISessionDB } from "../../security-devices/types/ISessionDB";
-import { sessionsRepository } from "../../security-devices/infrastructure/security-devices.repository";
+import { SessionsRepository } from "../../security-devices/infrastructure/security-devices.repository";
+import { inject, injectable } from "inversify";
 
+@injectable()
+export class AuthService {
+  jwtService: JwtService;
+  usersRepo: UsersRepository;
+  bcryptService: BcryptService;
+  sessionsRepo: SessionsRepository;
+  usersQwRepo: UsersQwRepository;
+  nodemailerServise: NodemailerServise;
 
-export const authService = {
-  async loginUser(
+  constructor( @inject(UsersRepository) usersRepo: UsersRepository,  @inject(BcryptService) bcryptService: BcryptService, @inject(JwtService) jwtService: JwtService, 
+  @inject(SessionsRepository) sessionsRepo: SessionsRepository,
+  @inject(UsersQwRepository) usersQwRepo: UsersQwRepository, @inject(NodemailerServise) nodemailerServise: NodemailerServise){
+
+    this.usersRepo = usersRepo;
+    this.bcryptService = bcryptService;
+    this.jwtService = jwtService;
+    this.sessionsRepo = sessionsRepo;
+    this.usersQwRepo = usersQwRepo;
+    this.nodemailerServise = nodemailerServise;
+
+  }
+
+ async loginUser( 
     loginOrEmail: string,
     password: string,
     userAgent: string = 'unknown',
@@ -43,11 +64,11 @@ export const authService = {
         extensions: [{ field: "loginOrEmail", message: "Email not confirm" }],  
     };
     
-    const accessToken = await jwtService.createAccessToken(user);
+    const accessToken = await this.jwtService.createAccessToken(user);
 
     const deviceId = uuidv4();
-    const refreshToken = await jwtService.createRefreshToken(user, deviceId);
-    const payloadRefreshToken = await jwtService.getPayloadByRefreshToken(refreshToken);
+    const refreshToken = await this.jwtService.createRefreshToken(user, deviceId);
+    const payloadRefreshToken = await this.jwtService.getPayloadByRefreshToken(refreshToken);
 
     if(!payloadRefreshToken) return {
         status: ResultStatus.Unauthorized,
@@ -66,44 +87,44 @@ export const authService = {
     deviceId,
     }
 
-    await sessionsRepository.createSession(session);
+    await this.sessionsRepo.createSession(session);
 
     return {
       status: ResultStatus.Success,
       data: [ accessToken, refreshToken, payloadRefreshToken.deviceId ], //payloadRefreshToken.deviceId - вынули чтобы тесты могли норм тестировать 
       extensions: [],
     };; 
-  },
+  }
 
   //проверяем логин/почту и пароль юзера (созданног через админку) есть ли он в базе, если нет , то неверные данные , если есть то возвращаем юзера
-  async checkUserCredentials(
+ async checkUserCredentials(
     loginOrEmail: string,
     password: string,
   ): Promise<WithId<UserAccountDbType> | null> {
-    const user = await usersRepository.findByLoginOrEmail(loginOrEmail);
+    const user = await this.usersRepo.findByLoginOrEmail(loginOrEmail);
   
     if (!user) return null;
 
-    const correctPassword = await bcryptService.checkPassword(
+    const correctPassword = await this.bcryptService.checkPassword(
       password,
       user.accountData.passwordHash,
     );
 
     return correctPassword ? user : null;
-  },
+  }
 
 
-  async getUserByUserId(userId: string): Promise<IUserAuthMe | null> {
-    const user = await usersQwRepository.findUserByUserId(userId);
+   async getUserByUserId(userId: string): Promise<IUserAuthMe | null> {
+    const user = await this.usersQwRepo.findUserByUserId(userId);
     if (!user) return null;
 
     return user;
-  },
+  }
 
-  async registrationUser(dto: CreateUserDto): Promise<Result<string | null>> {
+   async registrationUser(dto: CreateUserDto): Promise<Result<string | null>> {
     const { login, email, password } = dto;
 
-    const userByEmail = await usersRepository.findByEmail(email);
+    const userByEmail = await this.usersRepo.findByEmail(email);
     if (userByEmail)
       return {
         status: ResultStatus.BadRequest,
@@ -112,7 +133,7 @@ export const authService = {
         extensions: [{ field: "email", message: "Email already exists" }],  
       };
 
-    const userByLogin = await usersRepository.findByLogin(login);    
+    const userByLogin = await this.usersRepo.findByLogin(login);    
     if (userByLogin)
       return {
         status: ResultStatus.BadRequest,
@@ -121,7 +142,7 @@ export const authService = {
         extensions: [{ field: "login", message: "Login already exists" }],
       };
 
-    const passwordHash = await bcryptService.generationHash(password);
+    const passwordHash = await this.bcryptService.generationHash(password);
 
     const newUser: UserAccountDbType = {
       accountData: {
@@ -137,16 +158,16 @@ export const authService = {
       },
     };
 
-    const resultCreateUser = await usersRepository.createUser(newUser);
+    const resultCreateUser = await this.usersRepo.createUser(newUser);
 
     try {
-      const sendEmail = await nodemailerServise.sendEmail(
+      const sendEmail = await this.nodemailerServise.sendEmail(
         newUser.accountData.email,
         newUser.emailConfirmation.confirmationCode!,
       );
     } catch (e: unknown) {
       console.error("Ошибка отправки email:", e);
-      await usersRepository.deleteUser(resultCreateUser);
+      await this.usersRepo.deleteUser(resultCreateUser);
     }
 
     return {
@@ -154,10 +175,10 @@ export const authService = {
       data: resultCreateUser,
       extensions: [],
     };
-  },
+  }
 
-  async confirmEmail(code: string): Promise<Result<boolean | null>>  {
-    const user = await usersRepository.findUserByConfirmationCode(code);
+   async confirmEmail(code: string): Promise<Result<boolean | null>>  {
+    const user = await this.usersRepo.findUserByConfirmationCode(code);
     if (!user) 
       return {
         status: ResultStatus.BadRequest,
@@ -182,7 +203,7 @@ export const authService = {
         extensions: [{ field: "code", message: "Code expired" }],
       };
 
-    const updateConfirm = await usersRepository.updateIsConfirmed(
+    const updateConfirm = await this.usersRepo.updateIsConfirmed(
       user.accountData.email,
     );
      return {
@@ -190,10 +211,10 @@ export const authService = {
       data: updateConfirm,
       extensions: [],
     };
-  },
+  }
 
-  async confirmReplayEmailCode(email: string): Promise<Result<boolean | null>> {
-    const confirmUser = await usersRepository.findByEmail(email);
+   async confirmReplayEmailCode(email: string): Promise<Result<boolean | null>> {
+    const confirmUser = await this.usersRepo.findByEmail(email);
 
     if (!confirmUser || confirmUser.emailConfirmation.isConfirmed) 
        return {
@@ -210,16 +231,16 @@ export const authService = {
 
     };
      
-    await usersRepository.updateUserByEmailResending(email, updateUser);
+    await this.usersRepo.updateUserByEmailResending(email, updateUser);
     
     try {
-        await nodemailerServise.sendEmail(
+        await this.nodemailerServise.sendEmail(
         confirmUser.accountData.email,
         updateUser.confirmationCode!,
       );
     } catch (e: unknown) {
       console.error("Ошибка отправки email:", e);
-      await usersRepository.deleteUser(confirmUser._id.toString());
+      await this.usersRepo.deleteUser(confirmUser._id.toString());
     }
 
     return {
@@ -227,16 +248,16 @@ export const authService = {
       data: true,
       extensions: [],
     };;
-  },
+  }
 
-    async updatingAccessAndRefreshTokens(
+  async updatingAccessAndRefreshTokens(
     userId: string,
     refreshToken: string,
   ): Promise<Result<string[] | null>>{
 
-    const user = await usersRepository.findById(userId);
+    const user = await this.usersRepo.findById(userId);
 
-    const payloadRefreshToken = await jwtService.getPayloadByRefreshToken(refreshToken);
+    const payloadRefreshToken = await this.jwtService.getPayloadByRefreshToken(refreshToken);
     if(!payloadRefreshToken) return {
         status: ResultStatus.Unauthorized,
         errorMessage: "Unauthorized",
@@ -246,10 +267,10 @@ export const authService = {
 
     const { deviceId } = payloadRefreshToken;
     
-    const newAccessToken = await jwtService.createAccessToken(user!);  //юзер точно есть так как мы проверили это в мидлваре
-    const newRefreshToken = await jwtService.createRefreshToken(user!, deviceId); 
+    const newAccessToken = await this.jwtService.createAccessToken(user!);  //юзер точно есть так как мы проверили это в мидлваре
+    const newRefreshToken = await this.jwtService.createRefreshToken(user!, deviceId); 
 
-    const payloadNewRefreshToken = await jwtService.getPayloadByRefreshToken(newRefreshToken);
+    const payloadNewRefreshToken = await this.jwtService.getPayloadByRefreshToken(newRefreshToken);
     if(!payloadNewRefreshToken) return {
         status: ResultStatus.Unauthorized,
         errorMessage: "Unauthorized",
@@ -260,18 +281,18 @@ export const authService = {
     const dataIapRefresh = new Date(payloadNewRefreshToken.iat * 1000).toISOString();
     const dataExpRefresh = new Date(payloadNewRefreshToken.exp * 1000).toISOString();
 
-    await sessionsRepository.updateLastActiveDate( deviceId, dataIapRefresh ) ; //обновили дату сессии(сщздания и протухания)
-    await sessionsRepository.updateExpDateRefreshToken( deviceId, dataExpRefresh )
+    await this.sessionsRepo.updateLastActiveDate( deviceId, dataIapRefresh ) ; //обновили дату сессии(сщздания и протухания)
+    await this.sessionsRepo.updateExpDateRefreshToken( deviceId, dataExpRefresh )
 
     return {
       status: ResultStatus.Success,
       data: [ newAccessToken, newRefreshToken ],
       extensions: [],
     };
-  },
+  }
 
-    async deleteSession( refreshToken: string ): Promise<Result<boolean | null>>{
-    const payload = await jwtService.getPayloadByRefreshToken(refreshToken);
+ async deleteSession( refreshToken: string ): Promise<Result<boolean | null>>{
+    const payload = await this.jwtService.getPayloadByRefreshToken(refreshToken);
     if(!payload) return {                                  
      status: ResultStatus.Unauthorized,
         errorMessage: "Unauthorized",
@@ -280,7 +301,7 @@ export const authService = {
     };
 
     const { userId, deviceId } = payload;
-    const result = await sessionsRepository.deleteDeviceWithDevicedId(userId, deviceId);
+    const result = await this.sessionsRepo.deleteDeviceWithDevicedId(userId, deviceId);
     if(!result)return {                                  
      status: ResultStatus.Unauthorized,
         errorMessage: "Unauthorized",
@@ -293,9 +314,69 @@ export const authService = {
       data: true , 
       extensions: [],
     };
-  },
+  }
 
+ async recoveryPassword(email: string): Promise<boolean | null>{
+   
+  const user = await this.usersRepo.findByEmail(email);
+
+   if(user){ 
+   const code = uuidv4();
+   const date = add(new Date(), { hours: 1, minutes: 30 });
+   const updateRecoveryCode = await this.usersRepo.updateRecoveryCode(user._id.toString(), code, date)
+
+   if(!updateRecoveryCode) return null;
+
+    try {
+        await this.nodemailerServise.sendEmailRecoveryPassword(
+        user.accountData.email,
+        code,
+      );
+    } catch (e: unknown) {
+      console.error("Ошибка отправки email:", e);
+    }
+   }
+
+   return true;
+  }
+
+ async newPassword(newPassword: string, recoveryCode: string): Promise<Result<boolean | null>>{  
+    const user = await this.usersRepo.checkRecoveryCode(recoveryCode);
+
+    if (!user) 
+      return {
+        status: ResultStatus.BadRequest,
+        errorMessage: "Bad Request",
+        data: null,
+        extensions: [{ field: "recoveryCode", message: "Code not found" }],
+      };
+
+    if(user && user.recoveryCode?.expirationDate! < new Date())   
+      return {
+        status: ResultStatus.BadRequest,
+        errorMessage: "Bad Request",
+        data: null,
+        extensions: [{ field: "code", message: "Code expired" }],
+      };
+
+      const newPasswordHash = await this.bcryptService.generationHash(newPassword);
+      const resultUpdateNewPassword = await this.usersRepo.updateNewPassword(user._id.toString(), newPasswordHash);
+    
+      return {
+      status: ResultStatus.Success,
+      data: resultUpdateNewPassword,
+      extensions: [],
+    };
+  ;
 };
+}
+
+
+
+
+
+
+
 
 
 

@@ -2,14 +2,16 @@ import { ISessionDB } from "../types/ISessionDB";
 import { sessionsCollection } from "../../db/mongo.db";
 import { WithId } from "mongodb";
 import { sessionViewModel } from "../types/sessionViewModel";
+import { injectable } from "inversify";
 
-export const sessionsQwRepository = {
+@injectable()
+export class SessionsQwRepository {
 
-   async findSessionsWithUserId( userId: string ): Promise< sessionViewModel []>{
+    async findSessionsWithUserId( userId: string ): Promise< sessionViewModel []>{
 
      const result = await sessionsCollection.find({ userId: userId }).toArray();
      return result.map((d) => this._getViewModelSession(d))                        //sessionsQwRepository._getViewModelSession
-   }, 
+   }
 
      _getViewModelSession(session: WithId<ISessionDB>): sessionViewModel{
         return {
@@ -18,6 +20,7 @@ export const sessionsQwRepository = {
          lastActiveDate: session.lastActiveDate,
          deviceId: session.deviceId,
         }
-     },
+     }
    
 }
+

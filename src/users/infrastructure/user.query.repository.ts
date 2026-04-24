@@ -6,11 +6,12 @@ import { IPagination } from "../../common/types/pagination";
 import { SortDirections } from "../../common/types/sort-direction"; 
 import { IUserAuthMe } from "../types/user.auth.me.output";
 import { UserAccountDbType } from "../../auth/types/user.account.db.type";
+import { injectable } from "inversify";
 
 
-
-export const usersQwRepository = {
-  async findAllUsers(
+@injectable()
+export class UsersQwRepository {
+   async findAllUsers(
     sortQueryDto: SortQueryFilterType,
   ): Promise<IPagination<IUserView[]>> {
     const {
@@ -54,9 +55,9 @@ export const usersQwRepository = {
       totalCount,
       items: users.map((u) => this._getInView(u)),
     };
-  },
+  }
 
-  async findUserById(id: string): Promise<IUserView | null> {
+   async findUserById(id: string): Promise<IUserView | null> {
     const user = await userCollection.findOne({ _id: new ObjectId(id) });
 
     if (!user) {
@@ -64,27 +65,27 @@ export const usersQwRepository = {
     }
     
     return this._getInView(user);
-  },
+  }
 
 
-  _getInView(user: WithId<UserAccountDbType>): IUserView {
+   _getInView(user: WithId<UserAccountDbType>): IUserView {
     return {
       id: user._id.toString(),
       login: user.accountData.login,
       email: user.accountData.email,
       createdAt: user.accountData.createdAt.toString(),
     };
-  },
+  }
 
-   async findUserByUserId(userId: string): Promise<IUserAuthMe | null>{
+    async findUserByUserId(userId: string): Promise<IUserAuthMe | null>{
 
     const user = await userCollection.findOne({ _id: new ObjectId(userId) });
     if(!user) return null;
 
     return this._getInViewAuthMe(user);
-  },
+  }
 
-   _getInViewAuthMe(user: WithId<UserAccountDbType>): IUserAuthMe {
+    _getInViewAuthMe(user: WithId<UserAccountDbType>): IUserAuthMe {
     return {
      
       login: user.accountData.login,
@@ -92,6 +93,8 @@ export const usersQwRepository = {
       userId: user._id.toString(),
 
     };
-  },
+  }
 
 };
+
+

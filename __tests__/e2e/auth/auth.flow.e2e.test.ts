@@ -6,12 +6,19 @@ import request from "supertest";
 import { AUTH_PATH, TESTING_PATH } from "../../../src/common/paths/path";
 import { HttpStatus } from "../../../src/common/types/http.status";
 import { registrationUser } from "../../../test-utils/users/createUser.helper";
-import { usersRepository } from "../../../src/users/infrastructure/user.repository";
-import { nodemailerServise } from "../../../src/auth/adapters/nodemailer.server";
+import { NodemailerServise } from "../../../src/auth/adapters/nodemailer.server";
+import { UsersRepository } from "../../../src/users/infrastructure/user.repository";
+import { container } from "../../../src/composition-root";
+
+let root;
+let usersRepo: UsersRepository;
 
 describe("AUTH_FLOW_TEST", () => {
   const app = express();
   setupApp(app);
+
+   root = container;
+   usersRepo = root.resolve(UsersRepository);
 
   beforeAll(async () => {
     await runDB(SETTINGS.MONGO_URL);
@@ -33,17 +40,19 @@ describe("AUTH_FLOW_TEST", () => {
     email: "admin.test@mail.ru",
   };
 
-   nodemailerServise.sendEmail = jest
-    .fn()
-    .mockImplementation((email: string, code: string, subject: string) =>
-      Promise.resolve(true),
-    );
+  //  nodemailerServise.sendEmail = jest
+  //   .fn()
+  //   .mockImplementation((email: string, code: string, subject: string) =>
+  //     Promise.resolve(true),
+  //   );
+
+    jest.spyOn(NodemailerServise.prototype, 'sendEmail').mockResolvedValue(true)
 
   it("registration → confirmation → login → me → refresh → logout → refresh(401)", async () => {
     //РЕГИСТРАЦИЯ
     await registrationUser(app, validDtoCreateUser);
 
-    const user = await usersRepository.findByLogin(validDtoCreateUser.login);
+    const user = await usersRepo.findByLogin(validDtoCreateUser.login);
 
     //ПОДТВЕРЖДЕНИЕ ПОЧТЫ
     await request(app)

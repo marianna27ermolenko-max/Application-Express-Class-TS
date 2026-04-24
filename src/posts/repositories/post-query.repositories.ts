@@ -2,16 +2,18 @@ import { ObjectId, WithId } from "mongodb";
 import { commentsCollection, postCollection } from "../../db/mongo.db";
 import { Post } from "../types/post.type";
 import { PaginationAndSorting } from "../../common/types/pagination_and_sorting";
-import { PostSortField } from "../routers/input/post-sort-field";
+import { PostSortField } from "../api/input/post-sort-field";
 import { ICommentDB } from "../../comments/types/comment.db.interface";
-import { CommentSortField } from "../routers/input/comment-sort-field";
+import { CommentSortField } from "../api/input/comment-sort-field";
 import { IPagination } from "../../common/types/pagination";
 import { ICommentView } from "../../comments/types/comment.view.model";
 import { SortDirections } from "../../common/types/sort-direction";
+import { injectable } from "inversify";
 
-export const postsQwRepository = {
+@injectable()
+export class PostsQwRepository {
 
-  async findMany(
+   async findMany(
     queryDto: PaginationAndSorting<PostSortField>,
   ): Promise<{ items: WithId<Post>[]; totalCount: number }> {
     const { pageNumber, pageSize, sortBy, sortDirection } = queryDto;
@@ -35,9 +37,9 @@ export const postsQwRepository = {
 
     const totalCount = await postCollection.countDocuments(filter);
     return { items, totalCount };
-  },
+  }
 
-  async findManyBlogId(
+   async findManyBlogId(
     blogId: string,
     queryDto: PaginationAndSorting<PostSortField>,
   ): Promise<{ items: WithId<Post>[]; totalCount: number }> {
@@ -66,20 +68,20 @@ export const postsQwRepository = {
 
     const totalCount = await postCollection.countDocuments(filter);
     return { items, totalCount };
-  },
+  }
 
-  async findPostById(id: string): Promise<WithId<Post> | null> {
+   async findPostById(id: string): Promise<WithId<Post> | null> {
     return postCollection.findOne({ _id: new ObjectId(id) });
-  },
+  }
 
-  async findCommentById(id: string): Promise<ICommentView | null> {
+   async findCommentById(id: string): Promise<ICommentView | null> {
     
   const comment = await commentsCollection.findOne({ _id: new ObjectId(id) });
   if(!comment) return null;
   return this._getInViewComment(comment)
-  },
+  }
 
-  async findManyCommentsByPostId(
+   async findManyCommentsByPostId(
     postId: string,
     sortQueryDto: PaginationAndSorting<CommentSortField>,
   ): Promise<IPagination<ICommentView[]>> {
@@ -109,9 +111,9 @@ export const postsQwRepository = {
     totalCount: totalCount,
     items: comments.map((u) => this._getInViewComment(u)),
     }
-  },
+  }
 
-  _getInViewComment(comment: WithId<ICommentDB>): ICommentView{
+   _getInViewComment(comment: WithId<ICommentDB>): ICommentView{
     return {
     id: comment._id.toString(),
     content: comment.content,
@@ -122,3 +124,5 @@ export const postsQwRepository = {
     createdAt: comment.createdAt.toString(),
  }}
 };
+
+

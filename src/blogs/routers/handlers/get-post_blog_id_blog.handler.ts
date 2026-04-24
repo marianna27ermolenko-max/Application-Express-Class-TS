@@ -1,61 +1,61 @@
-import { Response, Request } from "express";
-import { postsService } from "../../../posts/domain/posts.service";
-import { HttpStatus } from "../../../common/types/http.status";
-import { blogsService } from "../../domain/blogs.service";
-import { BlogsBlogIdQueryInput } from "../input/blogs-blogId-query-dto";
-import { matchedData } from "express-validator";
-import { setDefaultSortAndPaginationIfNotExist } from "../../../common/helpers/set-default-sort-and-pagination";
-import { mapToPostListPaginatedOutput } from "../../../posts/routers/mappers/map-to-post-list-paginated-output.util";
-import { PostSortField } from "../../../posts/routers/input/post-sort-field";
-import { APIErrorResult } from "../../../common/utils/APIErrorResult";
-import { PostsQueryInput } from "../../../posts/routers/input/posts-query.input";
-import { setDefaultPostPagination } from "../../../common/helpers/set-default-post-sort-and-pagination";
-import { postsQwRepository } from "../../../posts/repositories/post-query.repositories";
+// import { Response, Request } from "express";
+// import { PostsService } from "../../../posts/domain/posts.service";
+// import { HttpStatus } from "../../../common/types/http.status";
+// import { BlogsService } from "../../domain/blogs.service";
+// import { BlogsBlogIdQueryInput } from "../input/blogs-blogId-query-dto";
+// import { matchedData } from "express-validator";
+// import { setDefaultSortAndPaginationIfNotExist } from "../../../common/helpers/set-default-sort-and-pagination";
+// import { mapToPostListPaginatedOutput } from "../../../posts/routers/mappers/map-to-post-list-paginated-output.util";
+// import { PostSortField } from "../../../posts/routers/input/post-sort-field";
+// import { APIErrorResult } from "../../../common/utils/APIErrorResult";
+// import { PostsQueryInput } from "../../../posts/routers/input/posts-query.input";
+// import { setDefaultPostPagination } from "../../../common/helpers/set-default-post-sort-and-pagination";
+// import { PostsQwRepository } from "../../../posts/repositories/post-query.repositories";
 
-export async function getPostThroughBlogId(
-  req: Request<{ blogId: string }, {}, {}, PostsQueryInput>,
-  res: Response,
-) {
-  try {
-    const blogId = req.params.blogId;
+// export async function getPostThroughBlogId(
+//   req: Request<{ blogId: string }, {}, {}, PostsQueryInput>,
+//   res: Response,
+// ) {
+//   try {
+//     const blogId = req.params.blogId;
     
-    const blog = await blogsService.findByIdOrFail(blogId);
-    if (!blog) {
-      return res.status(HttpStatus.NOT_FOUND).json(
-        APIErrorResult([
-          { message: "Blog not found", field: "blogId"}])
-      );
-    }
+//     const blog = await BlogsService.findById(blogId);
+//     if (!blog) {
+//       return res.status(HttpStatus.NOT_FOUND).json(
+//         APIErrorResult([
+//           { message: "Blog not found", field: "blogId"}])
+//       );
+//     }
 
-    const sanitizedQuery = matchedData<PostsQueryInput>(req, {
-      locations: ["query"], // - "Бери данные только из req.query"
-      includeOptionals: true, // -Верни даже необязательные поля, если они есть
-    });
+//     const sanitizedQuery = matchedData<PostsQueryInput>(req, {
+//       locations: ["query"], // - "Бери данные только из req.query"
+//       includeOptionals: true, // -Верни даже необязательные поля, если они есть
+//     });
 
-    const pageNumber = Number(sanitizedQuery.pageNumber);
-    const pageSize = Number(sanitizedQuery.pageSize);
+//     const pageNumber = Number(sanitizedQuery.pageNumber);
+//     const pageSize = Number(sanitizedQuery.pageSize);
 
-    //потом применяем дефолты(создаем функцию которая если нет значения добавляет дефолтное)
-    const pagination = setDefaultPostPagination<PostSortField>({
-     ...sanitizedQuery,
-       pageNumber,
-       pageSize
-    });
+//     //потом применяем дефолты(создаем функцию которая если нет значения добавляет дефолтное)
+//     const pagination = setDefaultPostPagination<PostSortField>({
+//      ...sanitizedQuery,
+//        pageNumber,
+//        pageSize
+//     });
 
-    const { items, totalCount } = await postsQwRepository.findManyBlogId(
-      blogId,
-      pagination,
-    );
+//     const { items, totalCount } = await PostsQwRepository.findManyBlogId(
+//       blogId,
+//       pagination,
+//     );
 
-    const postsOutput = mapToPostListPaginatedOutput(items, {
-      pageNumber: pagination.pageNumber,
-      pageSize: pagination.pageSize,
-      totalCount,
-    });
+//     const postsOutput = mapToPostListPaginatedOutput(items, {
+//       pageNumber: pagination.pageNumber,
+//       pageSize: pagination.pageSize,
+//       totalCount,
+//     });
 
-    res.status(HttpStatus.OK).json(postsOutput);
+//     res.status(HttpStatus.OK).json(postsOutput);
 
-  } catch (e: unknown) {
-    res.sendStatus(HttpStatus.INTERNAL_SERVER_ERROR);
-  }
-}
+//   } catch (e: unknown) {
+//     res.sendStatus(HttpStatus.INTERNAL_SERVER_ERROR);
+//   }
+// }

@@ -2,7 +2,7 @@ import request from "supertest";
 import { setupApp } from "../../../src/setup-app";
 import express from "express";
 import { SETTINGS } from "../../../src/common/settings/setting";
-import { client, runDB } from "../../../src/db/mongo.db";
+import { client, runDB, userCollection } from "../../../src/db/mongo.db";
 import {
   AUTH_PATH,
   TESTING_PATH,
@@ -15,20 +15,32 @@ import {
 } from "../../../test-utils/users/createUser.helper";
 import { testSeederUserDTO } from "../../../test-utils/seeder/test.seeder";
 import { fullCreateUserWithToken } from "../../../test-utils/auth/fullCreateUserWithTokens.helper";
-import { usersRepository } from "../../../src/users/infrastructure/user.repository";
 import {
   ADMIN_PASSWORD,
   ADMIN_USERNAME,
 } from "../../../src/auth/guard/super-admin.guard-middleware";
-import { nodemailerServise } from "../../../src/auth/adapters/nodemailer.server";
 import { registerAndConfirmUser } from "../../../test-utils/sessions/registration.helper";
 import { loginAndGetTokens } from "../../../test-utils/sessions/login.helper";
-import { sessionsRepository } from "../../../src/security-devices/infrastructure/security-devices.repository";
+import { container } from "../../../src/composition-root";
+import { ObjectId } from "mongodb";
+import { AuthService } from "../../../src/auth/domain/auth.service";
+import { UsersRepository } from "../../../src/users/infrastructure/user.repository";
+import { SessionsRepository } from "../../../src/security-devices/infrastructure/security-devices.repository";
+import { NodemailerServise } from "../../../src/auth/adapters/nodemailer.server";
 
+let root;
+let authService: AuthService;
+let usersRepo: UsersRepository;
+let sessionsRepo: SessionsRepository;
 
 describe("AUTH_TEST", () => {
   const app = express();
   setupApp(app);
+
+    root = container
+    authService = root.resolve(AuthService)
+    usersRepo = root.resolve(UsersRepository)
+    sessionsRepo = root.resolve(SessionsRepository)
 
   beforeAll(async () => {
     await runDB(SETTINGS.MONGO_URL);
@@ -56,11 +68,13 @@ describe("AUTH_TEST", () => {
     email: "admin.test@mail.ru",
   };
 
-  nodemailerServise.sendEmail = jest
-      .fn()
-      .mockImplementation((email: string, code: string, subject: string) =>
-        Promise.resolve(true),
-      );
+  // nodemailerServise.sendEmail = jest
+  //     .fn()
+  //     .mockImplementation((email: string, code: string, subject: string) =>
+  //       Promise.resolve(true),
+  //     );
+
+  jest.spyOn(NodemailerServise.prototype, 'sendEmail').mockResolvedValue(true)
 
   describe("POST /login", () => {
     describe("validation", () => {
@@ -427,7 +441,7 @@ describe("AUTH_TEST", () => {
       const device1 = await loginAndGetTokens( app, validDtoCreateUser, "device-1", '1.1.1.1');
       const { refreshToken } = device1;
 
-      await sessionsRepository.updateLastActiveDate(  device1.deviceId, "2000-01-01T00:00:00.000Z");
+      await sessionsRepo.updateLastActiveDate(  device1.deviceId, "2000-01-01T00:00:00.000Z");
       
       await request(app)
         .post(`${AUTH_PATH}/refresh-token`)
@@ -438,7 +452,7 @@ describe("AUTH_TEST", () => {
 
     it("should not update tokens if user not exist", async () => {
       const { refreshToken } = await fullCreateUserWithToken( app, validDtoCreateUser, );
-      const user = await usersRepository.findByEmail(validDtoCreateUser.email);
+      const user = await usersRepo.findByEmail(validDtoCreateUser.email);
 
       await request(app)
         .delete(`${USERS_PATH}/${user?._id}`)
@@ -531,7 +545,7 @@ describe("AUTH_TEST", () => {
 
       it("should not get information if user not exist", async () => {
         const { accessToken } = await fullCreateUserWithToken( app, validDtoCreateUser );
-        const user = await usersRepository.findByEmail( validDtoCreateUser.email );
+        const user = await usersRepo.findByEmail( validDtoCreateUser.email );
 
         await request(app)
           .delete(`${USERS_PATH}/${user?._id}`)
@@ -556,5 +570,125 @@ describe("AUTH_TEST", () => {
       }, 
       20000);
     });
+  });
+
+  describe('POST /password-recovery', () => {
+
+    describe("STATUS 204", () => {
+      it("should confirm password recovery", async () => {
+      const user = await testSeederUserDTO.insertUser(validDtoCreateUser)
+      await request(app)
+            .post(`${AUTH_PATH}/password-recovery`)
+            .send({email: user.accountData.email})  
+            .expect(HttpStatus.NO_CONTENT);
+
+      })
+
+       it("should confirm password recovery if email not found", async () => {
+     
+      await request(app)
+            .post(`${AUTH_PATH}/password-recovery`)
+            .send({email: validDtoCreateUser.email})  
+            .expect(HttpStatus.NO_CONTENT);
+      })
+
+
+    })
+
+      describe("STATUS 400", () => {
+      it("should not get code if the inputModel has invalid email", async () => {
+    
+      await request(app)
+            .post(`${AUTH_PATH}/password-recovery`)
+            .send({email: InvalidDtoUser.email})  
+            .expect(HttpStatus.BAD_REQUEST);
+
+      })
+  });
+
+   describe("STATUS 429", () => {
+      it("should not get code more than 5 attempts from one IP-address during 10 seconds", async () => {
+      const user = await testSeederUserDTO.insertUser(validDtoCreateUser)
+      
+      for(let i = 0; i < 5; i++){   
+        
+        await request(app)
+            .post(`${AUTH_PATH}/password-recovery`)
+            .send({email: user.accountData.email})  
+            .expect(HttpStatus.NO_CONTENT);
+      }
+
+         await request(app)
+            .post(`${AUTH_PATH}/password-recovery`)
+            .send({email: user.accountData.email})  
+            .expect(HttpStatus.TOO_MANY_REQUESTS);
+    })
+  
+  });
+  });
+
+
+  describe('POST /new-password', () => {
+
+   describe("STATUS 204", () => {
+      it("should update new password with current recovery code", async () => {
+      const user = await testSeederUserDTO.insertUser(validDtoCreateUser)
+
+      await request(app)
+            .post(`${AUTH_PATH}/password-recovery`)
+            .send({email: user.accountData.email})  
+            .expect(HttpStatus.NO_CONTENT);
+
+       const updatedUser = await userCollection.findOne({ _id: new ObjectId(user.id) });
+       const recoveryCode = updatedUser!.recoveryCode!.confirmationCode!;
+
+      await request(app)
+            .post(`${AUTH_PATH}/new-password`)
+            .send({ newPassword: "string145", recoveryCode: recoveryCode})  
+            .expect(HttpStatus.NO_CONTENT);
+
+      })
+    })
+
+     describe("STATUS 400", () => {
+      it("should not update new password for incorrect password length", async () => {
+      const user = await testSeederUserDTO.insertUser(validDtoCreateUser)
+     
+      await request(app)
+            .post(`${AUTH_PATH}/new-password`)
+            .send({ newPassword: "str", recoveryCode: user.recoveryCode.confirmationCode})  
+            .expect(HttpStatus.BAD_REQUEST);
+
+      })
+
+         it("should not update new password recoveryCode is incorrect", async () => {
+      const user = await testSeederUserDTO.insertUser(validDtoCreateUser)
+     
+      await request(app)
+            .post(`${AUTH_PATH}/new-password`)
+            .send({ newPassword: "strigbb", recoveryCode: 'gpopopo159'})  
+            .expect(HttpStatus.BAD_REQUEST);
+
+      })
+
+         it("should not update new password recoveryCode is expired", async () => {
+      const user = await testSeederUserDTO.insertUser(validDtoCreateUser)
+
+      const expiredCode = '159852354dhghfg753';
+      const expiredDate = new Date(Date.now() - 1000 * 60 * 60);
+
+      const update = await userCollection.updateOne({_id: new ObjectId(user.id)}, {$set: { 
+        'recoveryCode.confirmationCode': expiredCode,
+        'recoveryCode.expirationDate': expiredDate }})
+     
+      await request(app)
+            .post(`${AUTH_PATH}/new-password`)
+            .send({ newPassword: "strigbb", recoveryCode: expiredCode })  
+            .expect(HttpStatus.BAD_REQUEST);
+
+      })
+    })
+
+
   });
 });

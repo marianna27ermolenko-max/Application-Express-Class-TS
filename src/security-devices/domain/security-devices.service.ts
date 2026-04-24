@@ -1,30 +1,42 @@
-import { jwtService } from "../../auth/adapters/jwt.service";
+import { inject, injectable } from "inversify";
+import { JwtService } from "../../auth/adapters/jwt.service";
 import { Result } from "../../common/result/result.type";
 import { ResultStatus } from "../../common/result/resultCode";
-import { sessionsQwRepository } from "../infrastructure/security-devices.QwRepository"
-import { sessionsRepository } from "../infrastructure/security-devices.repository";
+import { SessionsQwRepository } from "../infrastructure/security-devices.QwRepository";
+import { SessionsRepository } from "../infrastructure/security-devices.repository";
 import { sessionViewModel } from "../types/sessionViewModel"
 
-export const securityDevicesService = {
+@injectable()
+export class SecurityDevicesService {
+
+    private sessionsQwRepo: SessionsQwRepository;
+    private sessionsRepo: SessionsRepository;
+    private jwtService: JwtService;
+
+    constructor(@inject(SessionsQwRepository) sessionsQwRepo: SessionsQwRepository, @inject(JwtService) jwtService: JwtService, @inject(SessionsRepository) sessionsRepo: SessionsRepository){
+      this.sessionsQwRepo = sessionsQwRepo;
+      this.sessionsRepo = sessionsRepo;
+      this.jwtService = jwtService;
+    }
 
     async findAllDevices(userId: string): Promise<sessionViewModel[]>{    //МОЖЕТ не надо это здесь так как у нас запрос в квери репозиорий - сделать напрямую?
-    return await sessionsQwRepository.findSessionsWithUserId(userId);
+    return await this.sessionsQwRepo.findSessionsWithUserId(userId);
     
-    },
+    }
 
     async deleteDevices( userId: string, refreshToken: string ): Promise<boolean>{
 
-     const payload = await jwtService.getPayloadByRefreshToken(refreshToken);
+     const payload = await this.jwtService.getPayloadByRefreshToken(refreshToken);
      if(!payload) return false;
 
      const deviceId = payload.deviceId;
       
-    return  await sessionsRepository.deleteDevices(userId, deviceId);
-    }, 
+    return  await  this.sessionsRepo.deleteDevices(userId, deviceId);
+    }
     
      async deleteDevicesWithDeviceId( userId: string, deviceIdWithParams: string, ): Promise<Result<boolean>>{
 
-     const session = await sessionsRepository.findSession( deviceIdWithParams ); //она точно есть так как есть проверка в мидлваре - до хендлера
+     const session = await  this.sessionsRepo.findSession( deviceIdWithParams ); //она точно есть так как есть проверка в мидлваре - до хендлера
  
      if(!session){ return {  
        status: ResultStatus.NotFound,
@@ -40,7 +52,7 @@ export const securityDevicesService = {
        data: false,
      }}
 
-    const result = await sessionsRepository.deleteDeviceWithDevicedId(userId, deviceIdWithParams);
+   await  this.sessionsRepo.deleteDeviceWithDevicedId(userId, deviceIdWithParams);
     
     return {  
        status: ResultStatus.Success,

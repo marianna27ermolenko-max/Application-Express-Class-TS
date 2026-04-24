@@ -13,6 +13,13 @@ export const passwordValidation = body("password")
   .isLength({ min: 6, max: 20 })
   .withMessage("Password is not correct");
 
+export const newPasswordValidation = body("newPassword")
+   .exists().withMessage('Password is required')
+  .isString()
+  .trim().notEmpty().withMessage('Password can not be empty')
+  .isLength({ min: 6, max: 20 })
+  .withMessage("Password is not correct");  
+
 export const emailValidation = body("email")
   .exists().withMessage('Email is required')
   .isString()
@@ -36,7 +43,16 @@ export const codeValidation = body("code")
   .isLength({ min: 1, max: 200})
   .withMessage("Code is not correct");
 
+export const recoveryCodeValidation = body("recoveryCode")
+  .exists().withMessage('Code is required')
+  .isString()
+  .trim().notEmpty().withMessage('Code can not be empty')
+  .isLength({ min: 1, max: 200})
+  .withMessage("Code is not correct");  
+
 
 export const bodyAuthValidation = [ loginOrEmailValidation, passwordValidation ];
 
 export const bodyAuthRegistration = [ loginValidation, emailValidation, passwordValidation ];
+
+export const bodyAuthNewPassword = [ newPasswordValidation, recoveryCodeValidation ];

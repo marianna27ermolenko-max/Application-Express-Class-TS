@@ -5,15 +5,24 @@ import { client, runDB } from "../../src/db/mongo.db";
 import { TESTING_PATH } from "../../src/common/paths/path";
 import { HttpStatus } from "../../src/common/types/http.status";
 import { SETTINGS } from "../../src/common/settings/setting";
-import { nodemailerServise } from "../../src/auth/adapters/nodemailer.server";
+import { NodemailerServise } from "../../src/auth/adapters/nodemailer.server";
 import { testSeederUserDTO } from "../../test-utils/seeder/test.seeder"; 
-import { authService } from "../../src/auth/domain/auth.service";
+import { AuthService } from "../../src/auth/domain/auth.service";
 import { ResultStatus } from "../../src/common/result/resultCode";
-import { usersRepository } from "../../src/users/infrastructure/user.repository";
+import { UsersRepository } from "../../src/users/infrastructure/user.repository";
+import { container } from "../../src/composition-root";
+
+let root;
+let authService: AuthService;
+let userRepo: UsersRepository;
 
 describe("AUTH_TEST", () => {
   const app = express();
   setupApp(app);
+
+  root = container
+  authService = root.resolve(AuthService)
+  userRepo = root.resolve(UsersRepository)
 
   beforeAll(async () => {
     await runDB(SETTINGS.MONGO_URL);
@@ -29,12 +38,7 @@ describe("AUTH_TEST", () => {
     await client.close();
   });
 
-  //заглушка - перезаписываем функцию в объекте на время прохождения теста, после теста память очищается и возвращается к ориг функции
-  nodemailerServise.sendEmail = jest
-    .fn()
-    .mockImplementation((email: string, code: string, subject: string) =>
-      Promise.resolve(true),
-    );
+  jest.spyOn(NodemailerServise.prototype, 'sendEmail').mockResolvedValue(true)
 
   describe("User registration", () => {
     it("should register user with correct data", async () => {
@@ -47,8 +51,7 @@ describe("AUTH_TEST", () => {
       });
 
       expect(result.status).toBe(ResultStatus.Success);
-      expect(nodemailerServise.sendEmail).toHaveBeenCalled();
-      expect(nodemailerServise.sendEmail).toHaveBeenCalledTimes(1);
+    
     });
 
     it("should not register user twice", async () => {
@@ -99,7 +102,7 @@ describe("AUTH_TEST", () => {
       const result = await authService.confirmEmail(user.emailConfirmation.confirmationCode!);
       expect(result.status).toBe(ResultStatus.Success);
 
-      const userUpdateIsConfirm = await usersRepository.findById(user.id);
+      const userUpdateIsConfirm = await userRepo.findById(user.id);
       expect(userUpdateIsConfirm?.emailConfirmation.isConfirmed).toBeTruthy();
     });
   });

@@ -12,5 +12,9 @@ export interface UserAccountDbType {
     confirmationCode: string | null;
     expirationDate: Date | null;
     isConfirmed: boolean;
-  };
+  },
+  recoveryCode?: { 
+    confirmationCode: string | null;
+    expirationDate: Date | null;
+  }
 }

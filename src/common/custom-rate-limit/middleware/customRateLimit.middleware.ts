@@ -9,19 +9,23 @@ export const customRateLimit = async (
   next: NextFunction,
 ) => { 
     
+    const limit = 5;
+    const windowWS = 10000;
     const url = req.originalUrl;
-    const ip = req.ip;
+    // const url = req.baseUrl + req.path;
+    console.log(url);
+    
     const date =  new Date();
-
+    const ip = req.ip ?? 'unknown';
     if(typeof ip !== 'string'){ return res.status(HttpStatus.BAD_REQUEST).json({errorsMessages: [{ field: "IP", message: 'Invalid IP address' }]})}
 
     const newExist: ICustomRateLimitDB = { ip, url, date, };
+    await customRateLimitCollection.insertOne(newExist); //обращаемся сразу в коллекцию без репозитория
 
-    const count = await customRateLimitCollection.countDocuments({ip, url, date: { $gte: new Date(Date.now() - 10000)}});
+    const count = await customRateLimitCollection.countDocuments({ip, url, date: { $gte: new Date(date.getTime() - windowWS)}}); //date.getTime() - переводим в милисекунды отнимает наше окно, апотом опять в дату
      
-    if(count >= 5){ return res.sendStatus(HttpStatus.TOO_MANY_REQUESTS)}
+    if(count > limit){ return res.sendStatus(HttpStatus.TOO_MANY_REQUESTS)}
 
-    await customRateLimitCollection.insertOne(newExist);  //обращаемся сразу в коллекцию без репозитория
 
     next(); 
   }

@@ -1,6 +1,6 @@
 import express, { Express, Request, Response } from 'express';
 import { blogsRouter } from './blogs/routers/routers.blog'; 
-import { postsRouter } from './posts/routers/router.post';
+import { postsRouter } from './posts/api/router.post';
 import { testingRouter } from './testing/testing.routers';
 import { AUTH_PATH, BLOGS_PATH, COMMENTS_PATH, POSTS_PATH, SECURITY_DEVICES_PATH, TESTING_PATH, USERS_PATH } from './common/paths/path';
 import { setupSwagger } from './common/swagger/setup-swagger';

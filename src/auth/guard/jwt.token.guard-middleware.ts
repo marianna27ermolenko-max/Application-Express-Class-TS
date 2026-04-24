@@ -1,7 +1,11 @@
 import { Request, Response, NextFunction } from "express" 
 import { HttpStatus } from "../../common/types/http.status";
-import { jwtService } from "../adapters/jwt.service";
-import { usersRepository } from "../../users/infrastructure/user.repository";
+import { container } from "../../composition-root";
+import { JwtService } from "../adapters/jwt.service";
+import { UsersRepository } from "../../users/infrastructure/user.repository";
+
+const jwtService = container.resolve(JwtService)
+const usersRepo  = container.resolve(UsersRepository)
 
 export const jwtTokenGuardMiddleware = 
     async (req: Request , 
@@ -27,7 +31,7 @@ export const jwtTokenGuardMiddleware =
             return res.sendStatus(HttpStatus.UNAUTHORIZED);
         }
           
-        const user = await usersRepository.findById(userId);
+        const user = await usersRepo.findById(userId);
         if(!user){
             return res.sendStatus(HttpStatus.UNAUTHORIZED);
         }

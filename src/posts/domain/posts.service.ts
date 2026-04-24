@@ -1,43 +1,41 @@
 import { Post} from "../types/post.type";
 import { PostInputModel } from "../dto/post.dto.view.input";
 import { WithId } from "mongodb";
-import { postsRepository } from "../repositories/post-repositories";
-import { PaginationAndSorting } from "../../common/types/pagination_and_sorting";
-import { PostSortField } from "../routers/input/post-sort-field";
+import { PostsRepository } from "../repositories/post-repositories";
 import { ICommentDB } from "../../comments/types/comment.db.interface";
+import { inject, injectable } from "inversify";
 
+@injectable()
+export class PostsService {
 
-export const postsService = {
+postsRepo: PostsRepository;
 
-// async findMany(queryDto: PaginationAndSorting<PostSortField>): Promise<{items: WithId<Post>[], totalCount: number}> {
-// return postsRepository.findMany(queryDto);
-// },
-// async findManyByBlogId(blogId: string, queryDto: PaginationAndSorting<PostSortField>): Promise<{items: WithId<Post>[], totalCount: number}> {
-// return postsRepository.findManyBlogId(blogId, queryDto);
-// },
- 
-//////
+constructor(@inject(PostsRepository) postsRepo: PostsRepository){
 
-async findPostById(id: string): Promise<WithId<Post> | null> {  //ПОДУМАТЬ ПЕРЕНОСИТЬ ЛИ В СЕРВЕС БЛОГ
-return postsRepository.findPostById(id);
-},
+this.postsRepo = postsRepo;
 
-async createPost(newPost: Post): Promise<WithId<Post>> {
-return postsRepository.createPost(newPost);
-},
+}    
 
-async updatePost(id: string, dto: PostInputModel): Promise<void> {
-return postsRepository.updatePost(id, dto);
-},
+ async findPostById(id: string): Promise<WithId<Post> | null> {  
+return this.postsRepo.findPostById(id);
+}
+
+ async createPost(newPost: Post): Promise<WithId<Post>> {
+return this.postsRepo.createPost(newPost);
+}
+
+ async updatePost(id: string, dto: PostInputModel): Promise<void> {
+return this.postsRepo.updatePost(id, dto);
+}
   
+ async deletePost(id: string): Promise<void> {
+return this.postsRepo.deletePost(id);
+}
 
-async deletePost(id: string): Promise<void> {
-return postsRepository.deletePost(id);
-},
-
-async createCommentByPostId(newComment: ICommentDB): Promise<string>{
-const createComment = await postsRepository.createCommentByPostId(newComment);
+ async createCommentByPostId(newComment: ICommentDB): Promise<string>{
+const createComment = await this.postsRepo.createCommentByPostId(newComment);
 return createComment;
 }
 
 };
+
