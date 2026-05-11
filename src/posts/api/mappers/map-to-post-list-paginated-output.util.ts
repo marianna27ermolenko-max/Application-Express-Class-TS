@@ -1,8 +1,7 @@
-import { Post } from "../../types/post.type"; 
-import { WithId } from "mongodb";
 import { PostListPaginatedOutputSimple } from "../output/post-list-pagination.output";
+import { PostDocument } from '../../domain/post.entity'; 
 
-export function mapToPostListPaginatedOutput(posts: WithId<Post>[], meta: {
+export function mapToPostListPaginatedOutput(posts: PostDocument[], meta: {
   pageNumber: number;
   pageSize: number; 
   totalCount: number;
@@ -26,7 +25,7 @@ export function mapToPostListPaginatedOutput(posts: WithId<Post>[], meta: {
 
 
 //для тех где нет айди - для всех
-export function mapToALLPostListPaginatedOutput(posts: WithId<Post>[], meta: {
+export function mapToALLPostListPaginatedOutput(posts: PostDocument[], meta: {
   pageNumber: number;
   pageSize: number; 
   totalCount: number;

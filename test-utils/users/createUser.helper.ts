@@ -1,8 +1,8 @@
 import { ADMIN_PASSWORD, ADMIN_USERNAME } from "../../src/auth/guard/super-admin.guard-middleware";
 import { AUTH_PATH, USERS_PATH } from "../../src/common/paths/path";
 import { HttpStatus } from "../../src/common/types/http.status";
-import { CreateUserDto } from "../../src/users/types/create.user.dto";
-import { IUserView } from "../../src/users/types/user.view.interface";
+import { CreateUserDto } from "../../src/users/domain/types/dto/create.user.dto"; 
+import { IUserView } from "../../src/users/domain/types/viewModel/user.view.interface"; 
 import request from "supertest";
 import { Express } from 'express'
 

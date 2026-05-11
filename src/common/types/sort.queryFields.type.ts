@@ -1,4 +1,4 @@
-import { UserSortFields } from "../../users/api/handlers/input/user-sort-field";
+import { UserSortFields } from "../../users/api/controller/input/user-sort-field";
 import { SortDirections } from "./sort-direction";
 
 //тип пагинации

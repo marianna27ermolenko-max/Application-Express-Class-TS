@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { HttpStatus } from "../../types/http.status";
-import { customRateLimitCollection } from "../../../db/mongo.db";
-import { ICustomRateLimitDB } from "../type/custom-rate-limitTypeDB";
+import { CustomModel, ICustomRateLimitDB } from "../custom-rate-limit.entity";
 
 export const customRateLimit = async (
   req: Request,
@@ -12,17 +11,15 @@ export const customRateLimit = async (
     const limit = 5;
     const windowWS = 10000;
     const url = req.originalUrl;
-    // const url = req.baseUrl + req.path;
-    console.log(url);
-    
+
     const date =  new Date();
     const ip = req.ip ?? 'unknown';
     if(typeof ip !== 'string'){ return res.status(HttpStatus.BAD_REQUEST).json({errorsMessages: [{ field: "IP", message: 'Invalid IP address' }]})}
 
     const newExist: ICustomRateLimitDB = { ip, url, date, };
-    await customRateLimitCollection.insertOne(newExist); //обращаемся сразу в коллекцию без репозитория
+    await CustomModel.insertOne(newExist); //обращаемся сразу в коллекцию без репозитория
 
-    const count = await customRateLimitCollection.countDocuments({ip, url, date: { $gte: new Date(date.getTime() - windowWS)}}); //date.getTime() - переводим в милисекунды отнимает наше окно, апотом опять в дату
+    const count = await CustomModel.countDocuments({ip, url, date: { $gte: new Date(date.getTime() - windowWS)}}); //date.getTime() - переводим в милисекунды отнимает наше окно, апотом опять в дату
      
     if(count > limit){ return res.sendStatus(HttpStatus.TOO_MANY_REQUESTS)}
 
@@ -32,7 +29,6 @@ export const customRateLimit = async (
 
 
 
-//   import 'dotenv/config';
 // import { app } from './init-app';
 // import { runDb } from './db/runDb';
 // import { settings } from './settings';

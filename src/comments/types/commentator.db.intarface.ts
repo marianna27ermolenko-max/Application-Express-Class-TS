@@ -1,6 +1,6 @@
-export interface CommentatorInfo {
+// export interface CommentatorInfo {
 
-userId: string;
-userLogin: string;
+// userId: string;
+// userLogin: string;
 
-}
+// }

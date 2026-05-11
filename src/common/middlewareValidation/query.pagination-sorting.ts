@@ -5,14 +5,9 @@ const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 10;
 const DEFAULT_SORT_DIRECTION = SortDirections.Desc;
 
-// export const paginationAndSortingDefault: PaginationAndSorting<string> = {
-//   page: DEFAULT_PAGE,
-//   pageSize: DEFAULT_PAGE_SIZE,
-//   sortBy: DEFAULT_SORT_BY,
-//   sortDirection: DEFAULT_SORT_DIRECTION,
-// }
-
 export function paginationAndSortingValidation<T extends string>(sortFieldsEnum: Record<string, T>){
+
+console.log("SORT ENUM =", sortFieldsEnum);
 return [
     query('pageNumber')
     .default(DEFAULT_PAGE)

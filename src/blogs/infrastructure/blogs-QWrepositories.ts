@@ -1,15 +1,14 @@
-import { Blog, BlogViewModel } from "../types/blog.type";
-import { blogCollection } from "../../db/mongo.db";
-import { WithId, ObjectId } from "mongodb";
+import { BlogViewModel } from "../types/blog.type";
 import { PaginationAndSorting } from "../../common/types/pagination_and_sorting";
 import { BlogSortField } from "../routers/input/blogs-sort-field";
 import { injectable } from "inversify";
+import { BlogDocument, BlogModel } from "../domain/blogs.entity";
 
 @injectable()
 export class BlogsQWRepository {
 
  async findMany(queryDTO: PaginationAndSorting<BlogSortField> & {searchNameTerm?: string | null;
-  }): Promise<{ items: WithId<Blog>[]; totalCount: number }> { 
+  }): Promise<{ items: BlogDocument[]; totalCount: number }> { 
 
     const {
       pageNumber,
@@ -27,7 +26,7 @@ export class BlogsQWRepository {
     filter.name = {$regex: searchNameTerm, $options: 'i'};
   }
 
-  const items = await blogCollection
+  const items = await BlogModel
      .find(filter)
      
       // "asc" (по возрастанию), то используется 1
@@ -39,21 +38,21 @@ export class BlogsQWRepository {
  
       // ограничивает количество возвращаемых документов до значения pageSize
       .limit(pageSize)
-      .toArray();
+     
  
-      const totalCount = await blogCollection.countDocuments(filter);
+      const totalCount = await BlogModel.countDocuments(filter);
 
 
        return {items, totalCount};
 }
 
  async findBlogById(id: string): Promise<BlogViewModel | null>{
-const result = await blogCollection.findOne({_id: new ObjectId(id)})
+const result = await BlogModel.findOne({_id: id})
 if(!result) return null;
 return this._mapToBlogViewModel(result);
 }
 
- _mapToBlogViewModel(blog: WithId<Blog>): BlogViewModel {
+ _mapToBlogViewModel(blog: BlogDocument): BlogViewModel {
   return new BlogViewModel(
   blog._id.toString(),
   blog.name,

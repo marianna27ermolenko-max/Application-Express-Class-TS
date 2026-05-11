@@ -1,10 +1,10 @@
-import { CommentatorInfo } from "./commentator.db.intarface";
+// import { CommentatorInfo } from "./commentator.db.intarface";
 
-export interface ICommentDB {
+// export interface ICommentDB {
 
-content: string;
-postId: string;
-commentatorInfo: CommentatorInfo;
-createdAt: string;
+// content: string;
+// postId: string;
+// commentatorInfo: CommentatorInfo;
+// createdAt: string;
 
-}
+// }

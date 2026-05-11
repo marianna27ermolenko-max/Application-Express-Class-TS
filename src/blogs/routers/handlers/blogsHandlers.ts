@@ -1,10 +1,9 @@
 import { Response, Request } from "express";
 import { HttpStatus } from "../../../common/types/http.status";
-import { Blog } from "../../types/blog.type";
 import { mapToBlogViewModel } from "../mappers/map-blog-view-model";
 import { APIErrorResult } from "../../../common/utils/APIErrorResult";
 import { BlogInputModel } from "../../dto/blog.dto.model";
-import { BlogsService } from "../../domain/blogs.service";
+import { BlogsService } from "../../application/blogs.service";
 import { BlogsQueryInput } from "../input/blogs-query.input";
 import { PostCreateBlogIdDto } from "../input/post-blogId-body";
 import { PostsQueryInput } from "../../../posts/api/input/posts-query.input";
@@ -15,11 +14,12 @@ import { mapToBlogListPaginatedOutput } from "../mappers/map-to-blog-list-pagina
 import { setDefaultPostPagination } from "../../../common/helpers/set-default-post-sort-and-pagination";
 import { PostSortField } from "../../../posts/api/input/post-sort-field";
 import { mapToPostListPaginatedOutput } from "../../../posts/api/mappers/map-to-post-list-paginated-output.util";
-import { Post } from "../../../posts/types/post.type";
 import { mapToPostViewMolel } from "../../../posts/api/mappers/map-to-post-model";
 import { PostsQwRepository } from "../../../posts/repositories/post-query.repositories";
-import { PostsService } from "../../../posts/domain/posts.service";
+import { PostsService } from "../../../posts/application/posts.service";
 import { inject, injectable } from "inversify";
+import { ResultStatus } from "../../../common/result/resultCode";
+import { BlogsQWRepository } from "../../infrastructure/blogs-QWrepositories";
 
 
 @injectable()
@@ -28,86 +28,44 @@ export class BlogsController {
 blogsService: BlogsService; 
 postsQwRepo: PostsQwRepository;
 postsService: PostsService;
+blogsQWRepo: BlogsQWRepository;
 
 constructor(@inject(BlogsService) blogsService: BlogsService, @inject(PostsQwRepository) postsQwRepo: PostsQwRepository, 
-@inject(PostsService) postsService: PostsService){
+@inject(PostsService) postsService: PostsService, @inject(BlogsQWRepository) blogsQWRepo: BlogsQWRepository){
 
     this.blogsService = blogsService;
     this.postsQwRepo = postsQwRepo;
     this.postsService = postsService;
+    this.blogsQWRepo = blogsQWRepo;
 }   
 
 async createBlogHandler(req: Request<{}, {}, BlogInputModel>, res: Response){
 
   try{
-    const newBlog = new Blog (   
-    req.body.name,
-    req.body.description,
-    req.body.websiteUrl,
-    new Date().toISOString(),
-    false,
-  )
-  
-  const createBlog = await this.blogsService.createBlog(newBlog);
+ 
+  const createBlog = await this.blogsService.createBlog(req.body);
 
   const BlogViewModel = mapToBlogViewModel(createBlog);
   res.status(HttpStatus.CREATED).json(BlogViewModel);
 
 } catch (err: any){
-const errors = [
-  {
-     message: err.message ?? "Unknown error",
-     field: "blog",
-  }
-]
-res.status(HttpStatus.BAD_REQUEST).json(APIErrorResult(errors)) 
+res.sendStatus(HttpStatus.INTERNAL_SERVER_ERROR);
 };
 } 
 
- async  createBlogIdPost(req: Request<{blogId: string}, {}, PostCreateBlogIdDto>, res: Response){
+async  createBlogIdPost(req: Request<{blogId: string}, {}, PostCreateBlogIdDto>, res: Response){
 
 try{
-const blogId = req.params.blogId;
-const blog = await this.blogsService.findById(blogId);
 
-const { title, shortDescription, content } = req.body;
-  
+const createPost = await this.postsService.createPostForBlog( req.params.blogId, req.body); 
+if(createPost.status === ResultStatus.BadRequest){return res.status(HttpStatus.BAD_REQUEST).json({"errorsMessages": createPost.extensions})}
+if(createPost.status === ResultStatus.Success){
+if(!createPost.data){ return res.sendStatus(HttpStatus.INTERNAL_SERVER_ERROR)}
 
-  if (!blog) {      
-      return res.status(HttpStatus.NOT_FOUND).json(
-        APIErrorResult([
-          {
-            message: "Blog not found",
-            field: "blogId",
-          },
-        ]),
-      ); }
+  const createPostViewModel = mapToPostViewMolel(createPost.data);
+  return res.status(HttpStatus.CREATED).json(createPostViewModel)}
 
-const newPost =  new Post (
-    title,
-    shortDescription,
-    content,
-    req.params.blogId,
-    blog.name,
-    new Date().toISOString(),
-);
-
-// const newPost: Post = {
-//     title,
-//     shortDescription,
-//     content,
-//     blogId: req.params.blogId,
-//     blogName: blog.name,
-//     createdAt: new Date().toISOString()
-// };
-
-
-const createPost = await this.postsService.createPost(newPost); 
-const createPostViewModel = mapToPostViewMolel(createPost);
-
-res.status(HttpStatus.CREATED).json(createPostViewModel)
 }catch(e: unknown){
-   
 res.sendStatus(HttpStatus.INTERNAL_SERVER_ERROR);
 }
 }
@@ -133,8 +91,7 @@ try{
 
 async  getBlogHandler(req: Request<{id: string}>, res: Response){ 
 try{
-      const id = req.params.id;
-      const blog = await this.blogsService.findBlogById(id); 
+      const blog = await this.blogsQWRepo.findBlogById(req.params.id)
       if (!blog) {
         return res.sendStatus(HttpStatus.NOT_FOUND);
       }
@@ -186,6 +143,7 @@ async  getPostThroughBlogId(
 ) {
   try {
     const blogId = req.params.blogId;
+    const userId = req.userId || undefined;
     
     const blog = await this.blogsService.findById(blogId);
     if (!blog) {
@@ -210,18 +168,13 @@ async  getPostThroughBlogId(
        pageSize
     });
 
-    const { items, totalCount } = await this.postsQwRepo.findManyBlogId(
+    const postsOutput = await this.postsQwRepo.findManyBlogId(
       blogId,
       pagination,
+      userId,
     );
 
-    const postsOutput = mapToPostListPaginatedOutput(items, {
-      pageNumber: pagination.pageNumber,
-      pageSize: pagination.pageSize,
-      totalCount,
-    });
-
-    res.status(HttpStatus.OK).json(postsOutput);
+    return res.status(HttpStatus.OK).json(postsOutput);
 
   } catch (e: unknown) {
     res.sendStatus(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -234,22 +187,11 @@ async updateBlogHandler(
   res: Response,
 ) {
   try {
-    const id = req.params.id;
 
-    const blogReal = await this.blogsService.findById(id);
+    const result = await this.blogsService.updateBlog(req.params.id, req.body);
+    if(result.status === ResultStatus.NotFound){return res.sendStatus(HttpStatus.NOT_FOUND)}
+    if(result.status === ResultStatus.Success){return  res.sendStatus(HttpStatus.NO_CONTENT)}
 
-    if (!blogReal) {
-      return res.sendStatus(HttpStatus.NOT_FOUND);
-    }
-
-    const dto: BlogInputModel = {
-      name: req.body.name,
-      description: req.body.description,
-      websiteUrl: req.body.websiteUrl,
-    };
-
- await this.blogsService.updateBlog(id, dto);
-    res.sendStatus(HttpStatus.NO_CONTENT);
   } catch (err: unknown){
     res.sendStatus(HttpStatus.INTERNAL_SERVER_ERROR);
   }

@@ -23,7 +23,7 @@ const authController = container.resolve(AuthController);
 export const authRouter = Router();
 
 authRouter
-.post('/login', customRateLimit, bodyAuthValidation, inputValidationResultMiddleware, authController.createAuthUserHandler.bind(authController))
+.post('/login', customRateLimit, bodyAuthValidation, inputValidationResultMiddleware, authController.loginController.bind(authController))
 .post('/registration-confirmation',  customRateLimit, codeValidation, inputValidationResultMiddleware, authController.userRegistrationConfirmationHandler.bind(authController))
 .post('/registration', customRateLimit, bodyAuthRegistration, inputValidationResultMiddleware, authController.userRegistrationHandler.bind(authController)) 
 .post('/registration-email-resending',  customRateLimit, emailValidation, authController.registrationEmailResendingHandler.bind(authController))

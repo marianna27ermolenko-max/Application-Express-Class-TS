@@ -1,55 +1,48 @@
-import { commentsCollection, postCollection } from "../../db/mongo.db";
-import { Post} from "../types/post.type";
-import { PostInputModel } from "../dto/post.dto.view.input";
-import { WithId, ObjectId } from "mongodb";
-import { ICommentDB } from "../../comments/types/comment.db.interface";
+import { Post, PostDocument, PostModel } from '../domain/post.entity'; ; 
 import { injectable } from "inversify";
+import { CommentDocument } from '../../comments/domain/comment.entity'; 
+import { LikeModel } from '../../comments/domain/like.comment.entity';
+import { PostLikeDocument, PostLikeModel } from '../domain/like.post.entity';
+
 
 @injectable()
 export class PostsRepository {
 
- async findPostById(id: string): Promise<WithId<Post> | null> {
-return postCollection.findOne({_id: new ObjectId(id)});
+async savePost(post: PostDocument): Promise<void> {
+await post.save()
+}   
+
+async saveLike(like: PostLikeDocument): Promise<void> {
+await like.save()
+}  
+
+async saveComment(newComment: CommentDocument): Promise<CommentDocument>{ 
+const comment = await newComment.save();
+return comment;
+ }
+
+async findById(id: string): Promise<PostDocument | null> {
+return PostModel.findOne({_id: id});
 }
 
- async createPost(newPost: Post): Promise<WithId<Post>> {
-const insertResult = await postCollection.insertOne(newPost);
-return {...newPost, _id: insertResult.insertedId}
-}
-
- async createCommentByPostId(newComment: ICommentDB): Promise<string> { //переместить всервис - оттуда репа комментс
-const insertResult = await commentsCollection.insertOne(newComment);
-return insertResult.insertedId.toString();
-}
-
- async updatePost(id: string, dto: PostInputModel): Promise<void> {
-
-    const updateResult = await postCollection.updateMany({_id: new ObjectId(id)},
-    {$set: {    
-    title: dto.title, 
-    shortDescription: dto.shortDescription, 
-    content: dto.content,
-    blogId: dto.blogId,
-}})
-    if(updateResult.matchedCount < 1 ){
-        throw new Error('Post not exist')
-    };
-    return;
-}
-
- async updateManyBlogNameByBlogId(blogId: string, newblogName: string): Promise<void>{
-await postCollection.updateMany(
+async updateManyBlogNameByBlogId(blogId: string, newblogName: string): Promise<void>{
+await PostModel.updateMany(
     {blogId: blogId},
     {$set: { blogName: newblogName }}
 );
 return;
 }
 
- async deletePost(id: string): Promise<void> {
-const deleteResult = await postCollection.deleteOne({_id: new ObjectId(id)});
-if(deleteResult.deletedCount < 1){ throw new Error('Post not exist') };
-return;
+ async deletePost(id: string): Promise<boolean> {
+const deleteResult = await PostModel.deleteOne({_id: id});
+return deleteResult.deletedCount === 1;
 }
+
+ async findLikePost(userId: string, postId: string): Promise<PostLikeDocument | null> {
+  const like = await PostLikeModel.findOne({userId, postId});
+  if(!like) return null;
+  return like;
+ }
 
 };
 

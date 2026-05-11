@@ -1,21 +1,21 @@
 import jwt  from "jsonwebtoken";
 import { SETTINGS } from "../../common/settings/setting";
-import { WithId } from "mongodb";
-import { UserAccountDbType } from "../types/user.account.db.type";
 import { injectable } from "inversify";
+import { UserDocument } from "../../users/domain/users.entity";
+
 
 @injectable()
 export class JwtService {
                                                              
-     async createAccessToken(user: WithId<UserAccountDbType>): Promise<string>{ 
+     async createAccessToken(user: UserDocument): Promise<string>{ 
         
-        const accessToken = jwt.sign({userId: user._id}, SETTINGS.JWT_SECRET, {expiresIn: '10s'});  //10s
+        const accessToken = jwt.sign({userId: user._id}, SETTINGS.JWT_SECRET, {expiresIn: '5m'});  //10s
         return accessToken;
     }   
 
-     async createRefreshToken(user: WithId<UserAccountDbType>, deviceId: string): Promise<string>{
+     async createRefreshToken(user: UserDocument, deviceId: string): Promise<string>{
 
-        const refreshToken = jwt.sign({ userId: user._id, deviceId, createdAt: new Date()}, SETTINGS.JWT_SECRET, {expiresIn: '20s'});  
+        const refreshToken = jwt.sign({ userId: user._id, deviceId, createdAt: new Date()}, SETTINGS.JWT_SECRET, {expiresIn: '10m'});  //20s
         return refreshToken;
     }
  

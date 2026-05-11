@@ -1,16 +1,20 @@
 import { Response, Request } from "express";
 import { HttpStatus } from "../../../common/types/http.status";
-import { SecurityDevicesService } from "../../domain/security-devices.service";
+import { SecurityDevicesService } from "../../application/security-devices.service";
 import { ResultStatus } from "../../../common/result/resultCode";
 import { inject, injectable } from "inversify";
+import { SessionsQwRepository } from "../../infrastructure/security-devices.QwRepository";
 
 @injectable()
 export class SecurityDevicesController {
 
 securityDevicesService: SecurityDevicesService;
+sessionsQwRepo: SessionsQwRepository;
 
-constructor(@inject(SecurityDevicesService) securityDevicesService: SecurityDevicesService){
+constructor(@inject(SecurityDevicesService) securityDevicesService: SecurityDevicesService, 
+@inject(SessionsQwRepository) sessionsQwRepo: SessionsQwRepository,){
     this.securityDevicesService = securityDevicesService;
+    this.sessionsQwRepo = sessionsQwRepo;
 }
 
  async deleteAllDevicesHandler(req: Request, res: Response){
@@ -52,7 +56,7 @@ constructor(@inject(SecurityDevicesService) securityDevicesService: SecurityDevi
     try {
 
     const userId = req.userId;
-    const sessions = await this.securityDevicesService.findAllDevices(userId!);
+    const sessions = await this.sessionsQwRepo.findSessionsWithUserId(userId!);
 
     res.status(HttpStatus.OK).json(sessions);
   

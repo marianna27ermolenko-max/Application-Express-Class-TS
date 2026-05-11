@@ -21,20 +21,20 @@ export class BlogViewModel {
 
 // }
 
-export class Blog {
+// export class Blog {
 
-    constructor (
-    public name: string,
-    public description: string,
-    public websiteUrl: string,
-    public createdAt: string,
-    public isMembership: boolean,
-){ }
+//     constructor (
+//     public name: string,
+//     public description: string,
+//     public websiteUrl: string,
+//     public createdAt: string,
+//     public isMembership: boolean,
+// ){ }
 
-}
+// }
 
 
-// export type Blog = {
+// export interface Blog {
 
 //     name: string;
 //     description: string;

@@ -3,17 +3,20 @@ import { HttpStatus } from "../../../common/types/http.status";
 import { ResultStatus } from "../../../common/result/resultCode";
 import { RequestWithBody } from "../../../common/types/requests";
 import { LoginDto } from "../../types/login.dto";
-import { CreateUserDto } from "../../../users/types/create.user.dto";
+import { CreateUserDto } from "../../../users/domain/types/dto/create.user.dto";
 import { AuthService } from "../../domain/auth.service";
 import { inject, injectable } from "inversify";
+import { UsersQwRepository } from "../../../users/infrastructure/user.query.repository";
 
 @injectable()
 export class AuthController {
 
 authService: AuthService;
+usersQwRepo: UsersQwRepository;
 
-constructor(@inject(AuthService) authService: AuthService){
+constructor(@inject(AuthService) authService: AuthService, @inject(UsersQwRepository) usersQwRepo: UsersQwRepository){
    this.authService = authService;
+   this.usersQwRepo = usersQwRepo;
 }
 
 async  userRegistrationHandler(req: RequestWithBody<CreateUserDto>, res: Response){
@@ -130,12 +133,11 @@ async getAuthUserHandler(req: Request, res: Response) {
 
   try {
     const userId = req.userId; 
-
     if (!userId) {
       return res.sendStatus(HttpStatus.UNAUTHORIZED);
     }
 
-    const user = await this.authService.getUserByUserId(userId);
+    const user = await this.usersQwRepo.findUserByUserId(userId);;
     if (!user) {
       return res.sendStatus(HttpStatus.UNAUTHORIZED);
     }
@@ -147,7 +149,7 @@ async getAuthUserHandler(req: Request, res: Response) {
   }
 }
 
-async createAuthUserHandler(
+async loginController(
   req: RequestWithBody<LoginDto>,
   res: Response,
 ) {

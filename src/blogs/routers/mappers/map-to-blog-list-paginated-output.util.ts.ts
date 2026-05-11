@@ -1,9 +1,7 @@
-import { Blog } from "../../types/blog.type";
-import { WithId } from "mongodb";
-
+import { BlogDocument } from "../../domain/blogs.entity"; 
 
 export function mapToBlogListPaginatedOutput( //Он превращает: Он превращает+данные пагинации = готовый API ответ(преобразованный с пагинацией)
-  blogs: WithId<Blog>[],
+  blogs: BlogDocument[],
   meta: { pageNumber: number; pageSize: number; totalCount: number },
 ) {
   return {

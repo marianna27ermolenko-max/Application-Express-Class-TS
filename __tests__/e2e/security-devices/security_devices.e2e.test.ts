@@ -1,7 +1,7 @@
 import request from "supertest";
 import { setupApp } from "../../../src/setup-app";
 import express from "express";
-import { client, runDB } from "../../../src/db/mongo.db";
+import { runDB } from "../../../src/db/mongo.db";
 import { SETTINGS } from "../../../src/common/settings/setting";
 import {
   AUTH_PATH,
@@ -11,6 +11,7 @@ import {
 import { HttpStatus } from "../../../src/common/types/http.status";
 import { registerAndConfirmUser } from "../../../test-utils/sessions/registration.helper";
 import { loginAndGetTokens } from "../../../test-utils/sessions/login.helper";
+import mongoose from "mongoose";
 
 describe("SECURITY_DEVICES_TEST", () => {
   const app = express();
@@ -27,7 +28,7 @@ describe("SECURITY_DEVICES_TEST", () => {
   });
 
   afterAll(async () => {
-    await client.close();
+      await mongoose.disconnect();
   });
 
   const validDtoCreateUser = {

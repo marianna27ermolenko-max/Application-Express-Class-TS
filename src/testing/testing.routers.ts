@@ -1,19 +1,23 @@
 import { Router, Response, Request } from 'express';
-import { blogCollection, commentsCollection, customRateLimitCollection, postCollection, refreshTokenCollection, sessionsCollection, userCollection } from '../db/mongo.db';
 import { HttpStatus } from '../common/types/http.status';
+import { SessionModel } from "../security-devices/domain/securety-devices.entity"; 
+import { PostModel } from '../posts/domain/post.entity'; 
+import { CommentModel } from '../comments/domain/comment.entity'; 
+import { BlogModel } from '../blogs/domain/blogs.entity'; 
+import { CustomModel } from '../common/custom-rate-limit/custom-rate-limit.entity';
+import { UserModel } from '../users/domain/users.entity';
 
 export const testingRouter = Router();
 
 testingRouter
    .delete("/all-data", async (req: Request, res: Response) => {
       await Promise.all([
-   blogCollection.deleteMany(),
-   postCollection.deleteMany(),
-   userCollection.deleteMany(),
-   commentsCollection.deleteMany(),
-   refreshTokenCollection.deleteMany(),
-   sessionsCollection.deleteMany(),
-   customRateLimitCollection.deleteMany(),
+   BlogModel.deleteMany(),
+   PostModel.deleteMany(),
+   UserModel.deleteMany(),
+   CommentModel.deleteMany(),
+   SessionModel.deleteMany(),
+   CustomModel.deleteMany(),
    ])
    res.sendStatus(HttpStatus.NO_CONTENT);
 });

@@ -1,10 +1,3 @@
-// import { getBlogsListHandler } from "./handlers/get-blogs.list.handler";
-// import { createBlogHandler } from "./handlers/create-blog.handler";
-// import { getBlogHandler } from "./handlers/get-blog.handler";
-// import { updateBlogHandler } from "./handlers/update-blog.handler";
-// import { deleteBlogHandler } from "./handlers/delete-blog.handler";
-// import { createBlogIdPost } from "./handlers/create-post-blogId.handler";
-// import { getPostThroughBlogId } from "./handlers/get-post_blog_id_blog.handler";
 import { Router } from "express";
 import { superAdminGuardMiddleware } from "../../auth/guard/super-admin.guard-middleware";
 import {
@@ -20,6 +13,7 @@ import { postInputWithoutBlogIdValidationMiddleware } from "../../posts/validati
 import { searchQueryValidation } from "../validation/query.search.blog.validation";
 import { container } from "../../composition-root";
 import { BlogsController } from "./handlers/blogsHandlers";
+import { optionalAuthMiddleware } from "../../auth/guard/jwt.access.token.optional";
 
 const blogsController = container.resolve(BlogsController);
 
@@ -36,6 +30,7 @@ blogsRouter
   .get("/:id", idValidation, inputValidationResultMiddleware, blogsController.getBlogHandler.bind(blogsController))
   .get(
     "/:blogId/posts",
+    optionalAuthMiddleware,
     blogIdValidation,
     paginationAndSortingValidation(PostSortField),
     inputValidationResultMiddleware,

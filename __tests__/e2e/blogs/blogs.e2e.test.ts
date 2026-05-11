@@ -11,7 +11,8 @@ import {
   ADMIN_USERNAME,
 } from "../../../src/auth/guard/super-admin.guard-middleware";
 import { SETTINGS } from "../../../src/common/settings/setting";
-import { client, runDB } from "../../../src/db/mongo.db";
+import { runDB } from "../../../src/db/mongo.db";
+import mongoose from "mongoose";
 
 describe("BLOGS_TEST", () => {
   const app = express();
@@ -28,7 +29,7 @@ describe("BLOGS_TEST", () => {
   });
 
   afterAll(async () => {
-    await client.close();
+      await mongoose.disconnect();
   });
 
   const validDtoBlog: BlogInputModel = {

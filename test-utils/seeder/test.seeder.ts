@@ -1,8 +1,8 @@
 import { add } from "date-fns";
 import { randomUUID } from "crypto";
-import { userCollection } from "../../src/db/mongo.db";
 import { BcryptService } from "../../src/auth/adapters/bcrypt.service";
 import { container } from "../../src/composition-root";
+import { UserModel } from "../../src/users/domain/users.entity"; 
 
 let room;
 let bcryptService: BcryptService;
@@ -90,12 +90,9 @@ export const testSeederUserDTO = {
    } 
   }
 
-  const user = await userCollection.insertOne({...newUser})
+  const user = await UserModel.insertOne({...newUser})
 
-  return {
-    id: user.insertedId.toString(),
-    ...newUser
-  }
+  return user
 
   }
 }

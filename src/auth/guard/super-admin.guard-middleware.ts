@@ -2,7 +2,7 @@ import { NextFunction, Response, Request } from "express";
 import { HttpStatus } from "../../common/types/http.status";
 
 
-export const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';     //мы это должны вынести в сеттинг
+export const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';     
 export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'qwerty';
 
 export const superAdminGuardMiddleware = (
@@ -10,7 +10,7 @@ export const superAdminGuardMiddleware = (
     res: Response, 
     next: NextFunction
 ) => {
-
+ 
 const auth = req.headers['authorization'] as string;
 
 if(!auth){

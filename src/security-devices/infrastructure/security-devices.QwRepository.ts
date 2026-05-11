@@ -1,6 +1,4 @@
-import { ISessionDB } from "../types/ISessionDB";
-import { sessionsCollection } from "../../db/mongo.db";
-import { WithId } from "mongodb";
+import { SessionDocument, SessionModel } from "../../security-devices/domain/securety-devices.entity";  
 import { sessionViewModel } from "../types/sessionViewModel";
 import { injectable } from "inversify";
 
@@ -9,11 +7,11 @@ export class SessionsQwRepository {
 
     async findSessionsWithUserId( userId: string ): Promise< sessionViewModel []>{
 
-     const result = await sessionsCollection.find({ userId: userId }).toArray();
-     return result.map((d) => this._getViewModelSession(d))                        //sessionsQwRepository._getViewModelSession
+     const result = await SessionModel.find({ userId: userId });
+     return result.map((d) => this._getViewModelSession(d))                        
    }
 
-     _getViewModelSession(session: WithId<ISessionDB>): sessionViewModel{
+     _getViewModelSession(session: SessionDocument): sessionViewModel{
         return {
          ip: session.ip,
          title: session.title,

@@ -1,7 +1,7 @@
 import request from "supertest";
 import { setupApp } from "../../src/setup-app";
 import express from "express";
-import { client, runDB } from "../../src/db/mongo.db";
+import { runDB } from "../../src/db/mongo.db";
 import { TESTING_PATH } from "../../src/common/paths/path";
 import { HttpStatus } from "../../src/common/types/http.status";
 import { SETTINGS } from "../../src/common/settings/setting";
@@ -11,6 +11,7 @@ import { AuthService } from "../../src/auth/domain/auth.service";
 import { ResultStatus } from "../../src/common/result/resultCode";
 import { UsersRepository } from "../../src/users/infrastructure/user.repository";
 import { container } from "../../src/composition-root";
+import mongoose from "mongoose";
 
 let root;
 let authService: AuthService;
@@ -35,7 +36,7 @@ describe("AUTH_TEST", () => {
   });
 
   afterAll(async () => {
-    await client.close();
+    await mongoose.disconnect();
   });
 
   jest.spyOn(NodemailerServise.prototype, 'sendEmail').mockResolvedValue(true)

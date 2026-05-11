@@ -9,17 +9,22 @@ import { jwtTokenGuardMiddleware } from '../../auth/guard/jwt.token.guard-middle
 import { CommentSortField } from './input/comment-sort-field';
 import { container } from '../../composition-root';
 import { PostController } from './handlers/handler.posts';
-// import { postController } from '../../composition-root';
+import { optionalAuthMiddleware } from '../../auth/guard/jwt.access.token.optional';
+import { likeBodyValidation } from '../../comments/api/middleware/body.like.validation';
 
 const postController = container.resolve(PostController);
 
 export const postsRouter = Router();
 
 postsRouter 
-.get('/', paginationAndSortingValidation(PostSortField), inputValidationResultMiddleware, postController.getPostListHandler.bind(postController))
-.get('/:postId/comments', postIdValidation, paginationAndSortingValidation(CommentSortField), inputValidationResultMiddleware, postController.getByPostIdCommentHandler.bind(postController))
+.get('/', optionalAuthMiddleware, paginationAndSortingValidation(PostSortField), inputValidationResultMiddleware, postController.getPostListHandler.bind(postController))
+.get('/:postId/comments', optionalAuthMiddleware, postIdValidation, paginationAndSortingValidation(CommentSortField), inputValidationResultMiddleware, postController.getByPostIdCommentHandler.bind(postController))
+.get('/:id', optionalAuthMiddleware, idValidation, inputValidationResultMiddleware, postController.getPostHandler.bind(postController))
+
 .post('/:postId/comments', jwtTokenGuardMiddleware, postIdValidation, commentByPostIdInputValidationMiddleware, inputValidationResultMiddleware, postController.createByPostIdCommentHandler.bind(postController))
 .post('/', superAdminGuardMiddleware, postInputValidationMiddleware, inputValidationResultMiddleware, postController.createPostHandler.bind(postController))
-.get('/:id', idValidation, inputValidationResultMiddleware, postController.getPostHandler)
+
 .put('/:id', superAdminGuardMiddleware, idValidation, postInputValidationMiddleware, inputValidationResultMiddleware, postController.updatePostHandler.bind(postController))
+.put('/:postId/like-status', jwtTokenGuardMiddleware, postIdValidation, likeBodyValidation, inputValidationResultMiddleware, postController.updatePostLikeStatusController.bind(postController))
+
 .delete('/:id', superAdminGuardMiddleware, idValidation, inputValidationResultMiddleware, postController.deletePostHandler.bind(postController))

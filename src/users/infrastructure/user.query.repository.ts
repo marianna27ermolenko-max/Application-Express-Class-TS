@@ -1,12 +1,11 @@
-import { ObjectId, WithId } from "mongodb";
-import { userCollection } from "../../db/mongo.db";
-import { IUserView } from "../types/user.view.interface";
 import { SortQueryFilterType } from "../../common/types/sortQueryFilter.type";
 import { IPagination } from "../../common/types/pagination";
 import { SortDirections } from "../../common/types/sort-direction"; 
-import { IUserAuthMe } from "../types/user.auth.me.output";
-import { UserAccountDbType } from "../../auth/types/user.account.db.type";
+import { IUserAuthMe } from "../domain/types/viewModel/user.auth.me.output";
 import { injectable } from "inversify";
+import { IUserView } from "../domain/types/viewModel/user.view.interface";
+import { UserDocument, UserModel } from "../domain/users.entity";
+
 
 
 @injectable()
@@ -32,21 +31,30 @@ export class UsersQwRepository {
       filter.$or = []; //Оператор $or выполняет логическое ИЛИ между условиями в массиве — возвращает документы, где хотя бы одно условие истинно.
 
       if (searchEmailTerm) {
-        filter.$or.push({ email: { $regex: searchEmailTerm, $options: "i" } });
+        filter.$or.push({ "accountData.email": { $regex: searchEmailTerm, $options: "i" } });
       }
       if (searchLoginTerm) {
-        filter.$or.push({ login: { $regex: searchLoginTerm, $options: "i" } });
+        filter.$or.push({ "accountData.login": { $regex: searchLoginTerm, $options: "i" } });
       }
     }
 
-    const totalCount = await userCollection.countDocuments(filter);
+    const totalCount = await UserModel.countDocuments(filter);
 
-    const users = await userCollection
+    const sortMap: Record<string, string> = {
+     login: "accountData.login",
+     email: "accountData.email",
+     createdAt: "accountData.createdAt",
+    };
+
+    const sortField = sortMap[sortBy] || "accountData.createdAt";
+
+    const users = await UserModel
       .find(filter)
-      .sort({ [sortBy]: sortDir })
+      .sort({ [sortField]: sortDir }) //если маппить сортировку 
       .skip(skip)
       .limit(pageSize)
-      .toArray();
+      // .lean()
+     
 
     return {
       pagesCount: Math.ceil(totalCount / pageSize),
@@ -58,8 +66,8 @@ export class UsersQwRepository {
   }
 
    async findUserById(id: string): Promise<IUserView | null> {
-    const user = await userCollection.findOne({ _id: new ObjectId(id) });
-
+    const user = await UserModel.findById(id);
+     console.log("FIND USER BY ID:", user)
     if (!user) {
       return null;
     }
@@ -68,7 +76,8 @@ export class UsersQwRepository {
   }
 
 
-   _getInView(user: WithId<UserAccountDbType>): IUserView {
+   _getInView(user: UserDocument ): IUserView {
+     console.log("RAW USER DOC:", user);
     return {
       id: user._id.toString(),
       login: user.accountData.login,
@@ -79,13 +88,13 @@ export class UsersQwRepository {
 
     async findUserByUserId(userId: string): Promise<IUserAuthMe | null>{
 
-    const user = await userCollection.findOne({ _id: new ObjectId(userId) });
+    const user = await UserModel.findOne({ _id: userId });
     if(!user) return null;
 
     return this._getInViewAuthMe(user);
   }
 
-    _getInViewAuthMe(user: WithId<UserAccountDbType>): IUserAuthMe {
+    _getInViewAuthMe(user: UserDocument): IUserAuthMe {
     return {
      
       login: user.accountData.login,

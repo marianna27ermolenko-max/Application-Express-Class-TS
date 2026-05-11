@@ -1,7 +1,7 @@
 import { AUTH_PATH } from "../../src/common/paths/path";
 import { HttpStatus } from "../../src/common/types/http.status";
-import { CreateUserDto } from "../../src/users/types/create.user.dto";
-import { testSeederUserDTO } from "../seeder/test.seeder";
+import { CreateUserDto } from "../../src/users/domain/types/dto/create.user.dto"; 
+import { RegisterUserResultType, testSeederUserDTO } from "../seeder/test.seeder";
 import request from "supertest";
 import { Express } from "express";
 
@@ -9,6 +9,7 @@ export interface UserTokens {
   accessToken: string;
   refreshToken: string;
   cookies: string[];
+  user: RegisterUserResultType;
 }
 
     export const fullCreateUserWithToken = async (app: Express, dto: CreateUserDto ): Promise<UserTokens> => {
@@ -40,7 +41,7 @@ export interface UserTokens {
         const refreshCookie = cookies.find((c) => c.includes("refreshToken"));
         const refreshToken = refreshCookie?.split(";")[0].split("=")[1];
 
-        return {accessToken, refreshToken, cookies};
+        return {accessToken, refreshToken, cookies, user};
     }
 
 

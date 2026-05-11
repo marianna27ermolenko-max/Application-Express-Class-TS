@@ -1,6 +1,6 @@
 import { AUTH_PATH } from "../../src/common/paths/path";
 import { HttpStatus } from "../../src/common/types/http.status";
-import { CreateUserDto } from "../../src/users/types/create.user.dto";
+import { CreateUserDto } from "../../src/users/domain/types/dto/create.user.dto"; 
 import request from "supertest";
 import { Express } from "express";
 import jwt from "jsonwebtoken";

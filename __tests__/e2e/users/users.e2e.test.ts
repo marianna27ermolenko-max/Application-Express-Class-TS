@@ -2,14 +2,15 @@ import request from "supertest";
 import { setupApp } from "../../../src/setup-app";
 import express from "express";
 import { HttpStatus } from "../../../src/common/types/http.status";
-import { client, runDB } from "../../../src/db/mongo.db";
+import { runDB } from "../../../src/db/mongo.db";
 import { SETTINGS } from "../../../src/common/settings/setting";
 import { TESTING_PATH, USERS_PATH } from "../../../src/common/paths/path";
-import { CreateUserDto } from "../../../src/users/types/create.user.dto";
+import { CreateUserDto } from "../../../src/users/domain/types/dto/create.user.dto"; 
 import {
   ADMIN_PASSWORD,
   ADMIN_USERNAME,
 } from "../../../src/auth/guard/super-admin.guard-middleware";
+import mongoose from "mongoose";
 
 describe("USERS_TEST", () => {
   const app = express();
@@ -26,7 +27,7 @@ describe("USERS_TEST", () => {
   });
 
   afterAll(async () => {
-    await client.close();
+      await mongoose.disconnect();
   });
 
   const validDtoUser1: CreateUserDto = {

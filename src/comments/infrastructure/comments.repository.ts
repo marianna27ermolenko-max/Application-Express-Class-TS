@@ -1,26 +1,35 @@
-import { ObjectId, WithId } from "mongodb"
-import { commentsCollection } from "../../db/mongo.db"
-import { CommentBodyDto } from "../types/comment.body.dto";
-import { ICommentDB } from "../types/comment.db.interface";
 import { injectable } from "inversify";
+import { CommentDocument, CommentModel } from '../../comments/domain/comment.entity'; 
+import { LikeDocument, LikeModel } from "../../comments/domain/like.comment.entity";
 
 @injectable()
 export class CommentsRepository {
 
- async updateCommentByCommentId(id: string, dto: CommentBodyDto): Promise<boolean>{  //или вернуть айди?
-    
-    const updateComment = await commentsCollection.updateOne({_id: new ObjectId(id)}, { $set: {'content': dto.content}})
-    return updateComment.matchedCount === 1;
-}
+async saveComment(comment: CommentDocument): Promise<void>{ 
+await comment.save();
+}   
 
- async deleteCommentByCommentId(id: string): Promise<boolean>{
- const result = await commentsCollection.deleteOne({_id: new ObjectId(id)});
+ async deleteComment(id: string): Promise<boolean>{
+ const result = await CommentModel.deleteOne({_id: id});
  return result.deletedCount === 1;
 }
 
- async findCommentById(id: string): Promise <WithId<ICommentDB> | null>{
-    const comment = await commentsCollection.findOne({_id: new ObjectId(id)});
+ async findCommentById(id: string): Promise <CommentDocument | null>{
+    const comment = await CommentModel.findById(id);
     return comment;
 }
+
+//LIKE METHOD
+async findLikeComment(userId: string, commentId: string,): Promise <LikeDocument | null>{
+const result = await LikeModel.findOne({userId, commentId});
+if(!result) return null;
+return result;
+}
+
+async saveLikeComment(like: LikeDocument): Promise<void>{
+await like.save()
+}
+
+
 }
 

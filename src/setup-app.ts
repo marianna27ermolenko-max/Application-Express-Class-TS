@@ -4,21 +4,35 @@ import { postsRouter } from './posts/api/router.post';
 import { testingRouter } from './testing/testing.routers';
 import { AUTH_PATH, BLOGS_PATH, COMMENTS_PATH, POSTS_PATH, SECURITY_DEVICES_PATH, TESTING_PATH, USERS_PATH } from './common/paths/path';
 import { setupSwagger } from './common/swagger/setup-swagger';
-import { usersRouter } from './users/api/users.router';
+import { usersRouter } from './users/api/router/users.router'; 
 import { authRouter } from './auth/api/auth.router';
 import { commentsRouter } from './comments/api/comments.router';
 import cookieParser from 'cookie-parser';
 import { securityDevicesRouter } from './security-devices/api/security-devices.routers';
 
 export const setupApp = (app: Express) => {
-
+ 
 app.use(express.json());
 app.use(cookieParser()); 
+
+app.use((req, res, next) => {
+    console.log("🌍 GLOBAL HIT:", req.method, req.url);
+    next();
+  });
 
 app.get('/', (req: Request, res: Response) => {
     res.status(200).send('Hello users!');
 });
 
+app.post('/t2', (req, res) => {
+    console.log(req.headers);
+    
+})
+console.log("USERS_PATH =", USERS_PATH);
+app.use((req, res, next) => {
+  console.log("🌍 GLOBAL HIT:", req.method, req.url);
+  next();
+});
 
 app.use(BLOGS_PATH, blogsRouter);
 app.use(POSTS_PATH, postsRouter);

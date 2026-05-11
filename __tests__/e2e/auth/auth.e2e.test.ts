@@ -2,7 +2,7 @@ import request from "supertest";
 import { setupApp } from "../../../src/setup-app";
 import express from "express";
 import { SETTINGS } from "../../../src/common/settings/setting";
-import { client, runDB, userCollection } from "../../../src/db/mongo.db";
+import { runDB} from "../../../src/db/mongo.db";
 import {
   AUTH_PATH,
   TESTING_PATH,
@@ -22,11 +22,12 @@ import {
 import { registerAndConfirmUser } from "../../../test-utils/sessions/registration.helper";
 import { loginAndGetTokens } from "../../../test-utils/sessions/login.helper";
 import { container } from "../../../src/composition-root";
-import { ObjectId } from "mongodb";
 import { AuthService } from "../../../src/auth/domain/auth.service";
 import { UsersRepository } from "../../../src/users/infrastructure/user.repository";
 import { SessionsRepository } from "../../../src/security-devices/infrastructure/security-devices.repository";
 import { NodemailerServise } from "../../../src/auth/adapters/nodemailer.server";
+import mongoose from "mongoose";
+import { UserModel } from "../../../src/users/domain/users.entity"; 
 
 let root;
 let authService: AuthService;
@@ -53,7 +54,7 @@ describe("AUTH_TEST", () => {
   });
 
   afterAll(async () => {
-    await client.close();
+    await mongoose.disconnect();
   });
 
   const InvalidDtoUser = {
@@ -72,9 +73,10 @@ describe("AUTH_TEST", () => {
   //     .fn()
   //     .mockImplementation((email: string, code: string, subject: string) =>
   //       Promise.resolve(true),
-  //     );
+  //     ); //как доп.вариант
 
   jest.spyOn(NodemailerServise.prototype, 'sendEmail').mockResolvedValue(true)
+  jest.spyOn(NodemailerServise.prototype, 'sendEmailRecoveryPassword').mockResolvedValue(true)
 
   describe("POST /login", () => {
     describe("validation", () => {
@@ -639,7 +641,7 @@ describe("AUTH_TEST", () => {
             .send({email: user.accountData.email})  
             .expect(HttpStatus.NO_CONTENT);
 
-       const updatedUser = await userCollection.findOne({ _id: new ObjectId(user.id) });
+       const updatedUser = await UserModel.findOne({ _id: user.id});
        const recoveryCode = updatedUser!.recoveryCode!.confirmationCode!;
 
       await request(app)
@@ -677,7 +679,7 @@ describe("AUTH_TEST", () => {
       const expiredCode = '159852354dhghfg753';
       const expiredDate = new Date(Date.now() - 1000 * 60 * 60);
 
-      const update = await userCollection.updateOne({_id: new ObjectId(user.id)}, {$set: { 
+      const update = await UserModel.updateOne({_id: user.id}, {$set: { 
         'recoveryCode.confirmationCode': expiredCode,
         'recoveryCode.expirationDate': expiredDate }})
      

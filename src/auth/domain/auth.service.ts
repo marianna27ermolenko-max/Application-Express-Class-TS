@@ -1,20 +1,19 @@
-import { WithId } from "mongodb";
 import { UsersRepository } from "../../users/infrastructure/user.repository";
 import { BcryptService } from "../adapters/bcrypt.service";
-import { IUserAuthMe } from "../../users/types/user.auth.me.output";
 import { UsersQwRepository } from "../../users/infrastructure/user.query.repository";
 import { NodemailerServise } from "../adapters/nodemailer.server";
-import { UserAccountDbType } from "../types/user.account.db.type";
 import { v4 as uuidv4 } from "uuid";
 import { add } from "date-fns";
-import { CreateUserDto } from "../../users/types/create.user.dto";
+import { CreateUserDto } from "../../users/domain/types/dto/create.user.dto";
 import { Result } from "../../common/result/result.type";
 import { ResultStatus } from "../../common/result/resultCode";
-import { UserUpdateEmailResending } from "../../users/types/updateUserByEmailResending";
 import { JwtService } from "../adapters/jwt.service";
-import { ISessionDB } from "../../security-devices/types/ISessionDB";
+import { ISession } from "../../security-devices/domain/securety-devices.entity"; 
 import { SessionsRepository } from "../../security-devices/infrastructure/security-devices.repository";
 import { inject, injectable } from "inversify";
+import { UserDocument, UserModel } from "../../users/domain/users.entity";
+
+
 
 @injectable()
 export class AuthService {
@@ -25,8 +24,8 @@ export class AuthService {
   usersQwRepo: UsersQwRepository;
   nodemailerServise: NodemailerServise;
 
-  constructor( @inject(UsersRepository) usersRepo: UsersRepository,  @inject(BcryptService) bcryptService: BcryptService, @inject(JwtService) jwtService: JwtService, 
-  @inject(SessionsRepository) sessionsRepo: SessionsRepository,
+  constructor( @inject(UsersRepository) usersRepo: UsersRepository,  @inject(BcryptService) bcryptService: BcryptService, 
+  @inject(JwtService) jwtService: JwtService, @inject(SessionsRepository) sessionsRepo: SessionsRepository,
   @inject(UsersQwRepository) usersQwRepo: UsersQwRepository, @inject(NodemailerServise) nodemailerServise: NodemailerServise){
 
     this.usersRepo = usersRepo;
@@ -78,7 +77,7 @@ export class AuthService {
     };
     
 
-    const session: ISessionDB = {
+    const session: ISession = {
     userId: user._id.toString(),
     ip, 
     title: userAgent,
@@ -100,7 +99,7 @@ export class AuthService {
  async checkUserCredentials(
     loginOrEmail: string,
     password: string,
-  ): Promise<WithId<UserAccountDbType> | null> {
+  ): Promise< UserDocument | null> {
     const user = await this.usersRepo.findByLoginOrEmail(loginOrEmail);
   
     if (!user) return null;
@@ -113,15 +112,7 @@ export class AuthService {
     return correctPassword ? user : null;
   }
 
-
-   async getUserByUserId(userId: string): Promise<IUserAuthMe | null> {
-    const user = await this.usersQwRepo.findUserByUserId(userId);
-    if (!user) return null;
-
-    return user;
-  }
-
-   async registrationUser(dto: CreateUserDto): Promise<Result<string | null>> {
+  async registrationUser(dto: CreateUserDto): Promise<Result<string | null>> {
     const { login, email, password } = dto;
 
     const userByEmail = await this.usersRepo.findByEmail(email);
@@ -143,41 +134,32 @@ export class AuthService {
       };
 
     const passwordHash = await this.bcryptService.generationHash(password);
+    const confirmationCode = uuidv4();
+    const expirationDate = add(new Date(), { hours: 1, minutes: 30 });
 
-    const newUser: UserAccountDbType = {
-      accountData: {
-        login,
-        email,
-        passwordHash,
-        createdAt: new Date().toISOString(),
-      },
-      emailConfirmation: {
-        confirmationCode: uuidv4(),
-        expirationDate: add(new Date(), { hours: 1, minutes: 30 }),
-        isConfirmed: false,
-      },
-    };
+    const newUser = UserModel.createUser({login, email, passwordHash, confirmationCode, expirationDate})
 
-    const resultCreateUser = await this.usersRepo.createUser(newUser);
-
+    await this.usersRepo.save(newUser);
+    
     try {
-      const sendEmail = await this.nodemailerServise.sendEmail(
+       await this.nodemailerServise.sendEmail(
         newUser.accountData.email,
         newUser.emailConfirmation.confirmationCode!,
       );
     } catch (e: unknown) {
       console.error("Ошибка отправки email:", e);
-      await this.usersRepo.deleteUser(resultCreateUser);
+      await this.usersRepo.deleteUser(newUser._id.toString()); 
+      throw e;
     }
 
     return {
       status: ResultStatus.Success,
-      data: resultCreateUser,
+      data: newUser._id.toString(),
       extensions: [],
     };
   }
 
-   async confirmEmail(code: string): Promise<Result<boolean | null>>  {
+  async confirmEmail(code: string): Promise<Result<boolean | null>>  {
     const user = await this.usersRepo.findUserByConfirmationCode(code);
     if (!user) 
       return {
@@ -187,36 +169,32 @@ export class AuthService {
         extensions: [{ field: "code", message: "Code not found" }],
       };
 
-      if (user.emailConfirmation.isConfirmed) 
-      return {
-        status: ResultStatus.BadRequest,
-        errorMessage: "Bad Request",
-        data: null,
-        extensions: [{ field: "code", message: "Code already confirmed" }],
-      };
+    try{
 
-    if (user.emailConfirmation.expirationDate! < new Date()) 
-      return {
-        status: ResultStatus.BadRequest,
-        errorMessage: "Bad Request",
-        data: null,
-        extensions: [{ field: "code", message: "Code expired" }],
-      };
+    user.confirmEmail();
+    await this.usersRepo.save(user);
 
-    const updateConfirm = await this.usersRepo.updateIsConfirmed(
-      user.accountData.email,
-    );
-     return {
+    return {
       status: ResultStatus.Success,
-      data: updateConfirm,
+      data: true,
       extensions: [],
     };
+
+    } catch (e: unknown){
+
+        return {
+        status: ResultStatus.BadRequest,
+        errorMessage: "Bad Request",
+        data: null,
+        extensions: [{ field: "code", message: e instanceof Error ? e.message : 'Unknown error'}],
+      };
+    }
   }
 
    async confirmReplayEmailCode(email: string): Promise<Result<boolean | null>> {
-    const confirmUser = await this.usersRepo.findByEmail(email);
+    const user = await this.usersRepo.findByEmail(email);
 
-    if (!confirmUser || confirmUser.emailConfirmation.isConfirmed) 
+    if (!user /* || confirmUser.emailConfirmation.isConfirmed */) 
        return {
         status: ResultStatus.BadRequest,
         errorMessage: "Bad Request",
@@ -224,30 +202,36 @@ export class AuthService {
         extensions: [{ field: "email", message: "Email address has already been confirmed or the user has not been found." }],
       };
 
-    const updateUser: UserUpdateEmailResending = {  
-     
-        confirmationCode: uuidv4(),
-        expirationDate: add(new Date(), { hours: 1, minutes: 30 }),
+   try{   
+      const code = uuidv4();
+      const expirationDate = add(new Date(), { hours: 1, minutes: 30 });
 
-    };
-     
-    await this.usersRepo.updateUserByEmailResending(email, updateUser);
+      user.refreshConfirmationCode(code, expirationDate);
+      await this.usersRepo.save(user);
     
     try {
         await this.nodemailerServise.sendEmail(
-        confirmUser.accountData.email,
-        updateUser.confirmationCode!,
+        user.accountData.email,
+        user.emailConfirmation.confirmationCode!,
       );
     } catch (e: unknown) {
       console.error("Ошибка отправки email:", e);
-      await this.usersRepo.deleteUser(confirmUser._id.toString());
     }
 
     return {
       status: ResultStatus.Success,
       data: true,
       extensions: [],
-    };;
+    };
+  } catch(e: unknown){
+     return {
+        status: ResultStatus.BadRequest,
+        errorMessage: "Bad Request",
+        data: null,
+        extensions: [{ field: "email", message:  e instanceof Error ? e.message : 'Unknown error' }],
+      };
+  }
+
   }
 
   async updatingAccessAndRefreshTokens(
@@ -321,20 +305,23 @@ export class AuthService {
   const user = await this.usersRepo.findByEmail(email);
 
    if(user){ 
+   
    const code = uuidv4();
-   const date = add(new Date(), { hours: 1, minutes: 30 });
-   const updateRecoveryCode = await this.usersRepo.updateRecoveryCode(user._id.toString(), code, date)
+   const expirationDate = add(new Date(), { hours: 1, minutes: 30 });
+   
+   user.recoveryPassword(code, expirationDate); 
 
-   if(!updateRecoveryCode) return null;
+  await this.usersRepo.save(user);
 
     try {
         await this.nodemailerServise.sendEmailRecoveryPassword(
         user.accountData.email,
-        code,
+        user.recoveryCode.confirmationCode!,
       );
     } catch (e: unknown) {
       console.error("Ошибка отправки email:", e);
     }
+
    }
 
    return true;
@@ -349,28 +336,31 @@ export class AuthService {
         errorMessage: "Bad Request",
         data: null,
         extensions: [{ field: "recoveryCode", message: "Code not found" }],
-      };
+      }; 
 
-    if(user && user.recoveryCode?.expirationDate! < new Date())   
+      try{
+
+      const newPasswordHash = await this.bcryptService.generationHash(newPassword);
+
+      user.updatePassword(newPasswordHash);
+      await this.usersRepo.save(user);
+
       return {
+      status: ResultStatus.Success,
+      data: true,
+      extensions: [],
+    };
+  } catch (e: unknown){
+        return {
         status: ResultStatus.BadRequest,
         errorMessage: "Bad Request",
         data: null,
-        extensions: [{ field: "code", message: "Code expired" }],
-      };
+        extensions: [{ field: "code", message:  e instanceof Error ? e.message : 'Unknown error'  }],
 
-      const newPasswordHash = await this.bcryptService.generationHash(newPassword);
-      const resultUpdateNewPassword = await this.usersRepo.updateNewPassword(user._id.toString(), newPasswordHash);
-    
-      return {
-      status: ResultStatus.Success,
-      data: resultUpdateNewPassword,
-      extensions: [],
-    };
-  ;
+  }
 };
 }
-
+}
 
 
 

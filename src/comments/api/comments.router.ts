@@ -5,13 +5,15 @@ import { commentIdValidation, idValidation } from "../../common/middlewareValida
 import { commentByPostIdInputValidationMiddleware } from "../../posts/validation/post.body-validation-middleware";
 import { container } from "../../composition-root";
 import { CommentsController } from "./handlers/commentsHandler";
-// import { commentsController } from "../../composition-root";
+import { optionalAuthMiddleware } from "../../auth/guard/jwt.access.token.optional";
+import { likeBodyValidation } from "./middleware/body.like.validation";
 
 const commentsController = container.resolve(CommentsController);
 
 export const commentsRouter = Router();
 
 commentsRouter
-.get('/:id', idValidation, commentsController.getCommentHandler.bind(commentsController))
+.get('/:id', optionalAuthMiddleware,  idValidation, commentsController.getCommentHandler.bind(commentsController))
 .put('/:commentId', jwtTokenGuardMiddleware, commentIdValidation, commentByPostIdInputValidationMiddleware, inputValidationResultMiddleware, commentsController.updateCommentHandler.bind(commentsController))
+.put('/:commentId/like-status', jwtTokenGuardMiddleware, commentIdValidation, likeBodyValidation, inputValidationResultMiddleware, commentsController.updateCommentLikeStatusController.bind(commentsController))
 .delete('/:commentId', jwtTokenGuardMiddleware, commentIdValidation, inputValidationResultMiddleware, commentsController.deleteCommentHandler.bind(commentsController))

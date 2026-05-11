@@ -1,6 +1,6 @@
 import express from "express";
 import { setupApp } from "../../../src/setup-app";
-import { client, runDB } from "../../../src/db/mongo.db";
+import { runDB } from "../../../src/db/mongo.db";
 import { SETTINGS } from "../../../src/common/settings/setting";
 import request from "supertest";
 import { AUTH_PATH, TESTING_PATH } from "../../../src/common/paths/path";
@@ -9,6 +9,7 @@ import { registrationUser } from "../../../test-utils/users/createUser.helper";
 import { NodemailerServise } from "../../../src/auth/adapters/nodemailer.server";
 import { UsersRepository } from "../../../src/users/infrastructure/user.repository";
 import { container } from "../../../src/composition-root";
+import mongoose from "mongoose";
 
 let root;
 let usersRepo: UsersRepository;
@@ -31,7 +32,7 @@ describe("AUTH_FLOW_TEST", () => {
   });
 
   afterAll(async () => {
-    await client.close();
+     await mongoose.disconnect();
   });
 
   const validDtoCreateUser = {
@@ -121,6 +122,10 @@ describe("AUTH_FLOW_TEST", () => {
       .expect(HttpStatus.UNAUTHORIZED);
   });
 });
+
+
+
+
 
 
 
