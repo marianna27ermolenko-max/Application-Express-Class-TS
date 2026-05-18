@@ -101,6 +101,7 @@ JWT_SECRET=your_secret
 REFRESH_TOKEN_SECRET=your_refresh_secret
 ACCESS_TOKEN_EXPIRES_IN=10m
 REFRESH_TOKEN_EXPIRES_IN=20m
+
 ▶️ Running the project
 Development
 pnpm dev
@@ -108,33 +109,41 @@ Build
 pnpm build
 Production
 pnpm start
+
 🧪 Testing
 pnpm test
+
 📌 API Endpoints
+
 Auth
 POST /auth/login
 POST /auth/registration
 POST /auth/refresh-token
 POST /auth/logout
+
 Users
 GET /users
 POST /users
 DELETE /users/:id
+
 Blogs
 GET /blogs
 POST /blogs
 PUT /blogs/:id
 DELETE /blogs/:id
+
 Posts
 GET /posts
 POST /posts
 PUT /posts/:id
 DELETE /posts/:id
+
 Comments
 POST /posts/:postId/comments
 PUT /comments/:id
 DELETE /comments/:id
 PUT /comments/:id/like-status
+
 📊 Highlights
 Layered architecture (API / Domain / Application / Infrastructure)
 JWT authentication system
@@ -142,7 +151,7 @@ Email confirmation & password recovery
 Pagination & sorting
 Like system implementation
 Unit & integration testing
-👩‍💻 Author
 
+👩‍💻 Author
 Backend educational project built with Node.js + TypeScript.
 
